@@ -2,86 +2,127 @@
 (function () {
     'use strict';
 
-    var STYLE_ID = 'filmix-premium-v2';
+    var STYLE_ID = 'filmix-pro-plus-premium-v3';
+    var BODY_CLASS = 'filmix-premium-v3';
 
-    if (window.filmixPremiumV2Loaded) return;
-    window.filmixPremiumV2Loaded = true;
+    if (window.filmixPremiumV3Loaded) return;
+    window.filmixPremiumV3Loaded = true;
 
     var css = [
-        'body { background: #080a0e !important; color: #eee9df !important; }',
-
-        '.head, .head__body { background: #0b0e14 !important; }',
-        '.head__title { color: #e4c783 !important; letter-spacing: 1px; }',
-        '.head__menu-icon, .head__action { color: #e4c783 !important; }',
-
-        '.card { background: transparent !important; }',
-        '.card__view {',
-        ' border-radius: 13px !important;',
-        ' overflow: hidden !important;',
-        ' border: 1px solid rgba(214,182,109,.18) !important;',
-        ' box-shadow: 0 5px 18px rgba(0,0,0,.35) !important;',
-        ' transition: transform .2s ease, border-color .2s ease;',
+        'body.' + BODY_CLASS + ' {',
+        ' background: #080a0f !important;',
+        ' color: #f2eee5 !important;',
         '}',
-        '.card__img { border-radius: 12px !important; }',
-        '.card__title {',
+
+        /* Верхняя панель */
+        'body.' + BODY_CLASS + ' .head,',
+        'body.' + BODY_CLASS + ' .head__body {',
+        ' background: rgba(8,10,15,.97) !important;',
+        '}',
+        'body.' + BODY_CLASS + ' .head__title {',
+        ' color: #e4c783 !important;',
+        ' font-weight: 400 !important;',
+        ' letter-spacing: .04em;',
+        '}',
+
+        /* Карточки фильмов */
+        'body.' + BODY_CLASS + ' .card {',
+        ' width: 13.8em !important;',
+        '}',
+
+        'body.' + BODY_CLASS + ' .card__view {',
+        ' border-radius: 1em !important;',
+        ' overflow: visible !important;',
+        ' margin-bottom: 1.1em !important;',
+        ' box-shadow: 0 5px 18px rgba(0,0,0,.35);',
+        '}',
+
+        'body.' + BODY_CLASS + ' .card__img {',
+        ' border-radius: 1em !important;',
+        '}',
+
+        'body.' + BODY_CLASS + ' .card__title {',
         ' color: #f4eee3 !important;',
-        ' font-weight: 500 !important;',
-        ' letter-spacing: .2px;',
-        '}',
-        '.card__age { color: #c5ad7b !important; }',
-
-        '.card.focus .card__view,',
-        '.card.hover .card__view,',
-        '.card:focus .card__view {',
-        ' border: 2px solid #e1bd70 !important;',
-        ' box-shadow: 0 0 0 2px rgba(225,189,112,.2),',
-        ' 0 8px 28px rgba(0,0,0,.65) !important;',
-        ' transform: scale(1.035);',
+        ' font-size: 1.28em !important;',
+        ' font-weight: 400 !important;',
+        ' line-height: 1.25 !important;',
         '}',
 
-        '.menu { background: #10141c !important; }',
-        '.menu__item { border-radius: 9px !important; }',
-        '.menu__item.focus {',
-        ' background: rgba(214,182,109,.16) !important;',
-        ' border-left: 3px solid #d6b66d !important;',
+        'body.' + BODY_CLASS + ' .card__age {',
+        ' color: #c9ad72 !important;',
+        ' font-size: 1em !important;',
+        ' margin-top: .55em !important;',
         '}',
-        '.menu__text, .menu__ico { color: #eee5d4 !important; }',
 
-        '.selector.focus { outline-color: #d6b66d !important; }',
+        /* Выбранный фильм */
+        'body.' + BODY_CLASS + ' .card.focus .card__view,',
+        'body.' + BODY_CLASS + ' .card.hover .card__view {',
+        ' box-shadow: 0 0 0 3px #d8b66b,',
+        ' 0 0 24px rgba(216,182,107,.45) !important;',
+        '}',
 
-        '.full-start__title, .full-start-new__title {',
-        ' color: #e6c77f !important;',
+        'body.' + BODY_CLASS + ' .card.focus .card__title {',
+        ' color: #f4d998 !important;',
         '}',
-        '.full-start__button, .full-start-new__button {',
-        ' border-radius: 9px !important;',
+
+        /* Боковое меню */
+        'body.' + BODY_CLASS + ' .menu {',
+        ' background: #10141d !important;',
         '}',
-        '.full-start__button.focus, .full-start-new__button.focus {',
-        ' background: #d6b66d !important;',
+
+        'body.' + BODY_CLASS + ' .menu__item {',
+        ' border-radius: .7em !important;',
+        ' transition: background .2s ease;',
+        '}',
+
+        'body.' + BODY_CLASS + ' .menu__item.focus,',
+        'body.' + BODY_CLASS + ' .menu__item.traverse,',
+        'body.' + BODY_CLASS + ' .menu__item.hover {',
+        ' background: rgba(216,182,107,.2) !important;',
+        ' color: #f5d994 !important;',
+        ' box-shadow: inset 3px 0 #d8b66b;',
+        '}',
+
+        'body.' + BODY_CLASS + ' .menu__item.focus .menu__text,',
+        'body.' + BODY_CLASS + ' .menu__item.focus .menu__ico {',
+        ' color: #f5d994 !important;',
+        '}',
+
+        'body.' + BODY_CLASS + ' .menu__split {',
+        ' border-color: rgba(216,182,107,.25) !important;',
+        '}',
+
+        /* Кнопки и окна */
+        'body.' + BODY_CLASS + ' .full-start__title,',
+        'body.' + BODY_CLASS + ' .full-start-new__title {',
+        ' color: #e8ca86 !important;',
+        '}',
+
+        'body.' + BODY_CLASS + ' .full-start__button.focus,',
+        'body.' + BODY_CLASS + ' .full-start-new__button.focus {',
+        ' background: #d8b66b !important;',
         ' color: #111 !important;',
         '}',
 
-        '.modal__content, .selectbox, .settings {',
-        ' background: #141923 !important;',
+        'body.' + BODY_CLASS + ' .modal__content,',
+        'body.' + BODY_CLASS + ' .selectbox,',
+        'body.' + BODY_CLASS + ' .settings {',
+        ' background: #151a24 !important;',
         '}',
 
-        '::-webkit-scrollbar-thumb {',
-        ' background: #d6b66d !important;',
-        ' border-radius: 10px;',
+        /* Полосы прокрутки */
+        'body.' + BODY_CLASS + ' ::-webkit-scrollbar-thumb {',
+        ' background: #d8b66b !important;',
+        ' border-radius: 1em;',
         '}'
     ].join('\n');
 
-    function apply() {
-        if (!document.head || !document.body) return;
+    function applyTheme() {
+        if (!document.body || !document.head) return;
 
-        document.body.style.setProperty(
-            'background',
-            '#080a0e',
-            'important'
-        );
+        document.body.classList.add(BODY_CLASS);
 
-        var old = document.getElementById(STYLE_ID);
-
-        if (!old) {
+        if (!document.getElementById(STYLE_ID)) {
             var style = document.createElement('style');
             style.id = STYLE_ID;
             style.type = 'text/css';
@@ -91,16 +132,18 @@
     }
 
     function start() {
-        apply();
+        applyTheme();
 
         if (window.Lampa && Lampa.Listener &&
             typeof Lampa.Listener.follow === 'function') {
             Lampa.Listener.follow('app', function (event) {
-                if (event && event.type === 'ready') apply();
+                if (event && event.type === 'ready') {
+                    applyTheme();
+                }
             });
         }
 
-        console.log('[Filmix PRO+] Premium V2 active');
+        console.log('[Filmix PRO+] Premium Gold V3 enabled');
     }
 
     if (document.readyState === 'loading') {
