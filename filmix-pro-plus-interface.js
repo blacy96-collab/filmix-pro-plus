@@ -2,102 +2,90 @@
 (function () {
     'use strict';
 
-    var ID = 'filmix-pro-plus-premium';
-    var CLASS_NAME = 'filmix-premium-gold';
+    var STYLE_ID = 'filmix-premium-v2';
 
-    if (window.filmixPremiumGoldLoaded) return;
-    window.filmixPremiumGoldLoaded = true;
+    if (window.filmixPremiumV2Loaded) return;
+    window.filmixPremiumV2Loaded = true;
 
-    var CSS = [
-        ':root {',
-        ' --fp-gold: #d6b66d;',
-        ' --fp-gold-light: #f4dfaa;',
-        ' --fp-bg: #080a0e;',
-        ' --fp-panel: #151923;',
-        ' --fp-text: #f4f1e9;',
-        '}',
+    var css = [
+        'body { background: #080a0e !important; color: #eee9df !important; }',
 
-        'html, body {',
-        ' background: var(--fp-bg) !important;',
-        ' color: var(--fp-text) !important;',
-        '}',
+        '.head, .head__body { background: #0b0e14 !important; }',
+        '.head__title { color: #e4c783 !important; letter-spacing: 1px; }',
+        '.head__menu-icon, .head__action { color: #e4c783 !important; }',
 
-        'body.' + CLASS_NAME + ' {',
-        ' background: var(--fp-bg) !important;',
-        ' color: var(--fp-text) !important;',
-        '}',
-
-        'body.' + CLASS_NAME + ' .head,',
-        'body.' + CLASS_NAME + ' .head__body,',
-        'body.' + CLASS_NAME + ' .head__split {',
-        ' background: rgba(8,10,14,.98) !important;',
-        '}',
-
-        'body.' + CLASS_NAME + ' .head__title,',
-        'body.' + CLASS_NAME + ' .menu__title,',
-        'body.' + CLASS_NAME + ' .category__title,',
-        'body.' + CLASS_NAME + ' .title,',
-        'body.' + CLASS_NAME + ' .full-start__title,',
-        'body.' + CLASS_NAME + ' .full-start-new__title {',
-        ' color: var(--fp-gold-light) !important;',
-        '}',
-
-        'body.' + CLASS_NAME + ' .card__view {',
-        ' border-radius: 15px !important;',
+        '.card { background: transparent !important; }',
+        '.card__view {',
+        ' border-radius: 13px !important;',
         ' overflow: hidden !important;',
+        ' border: 1px solid rgba(214,182,109,.18) !important;',
+        ' box-shadow: 0 5px 18px rgba(0,0,0,.35) !important;',
+        ' transition: transform .2s ease, border-color .2s ease;',
+        '}',
+        '.card__img { border-radius: 12px !important; }',
+        '.card__title {',
+        ' color: #f4eee3 !important;',
+        ' font-weight: 500 !important;',
+        ' letter-spacing: .2px;',
+        '}',
+        '.card__age { color: #c5ad7b !important; }',
+
+        '.card.focus .card__view,',
+        '.card.hover .card__view,',
+        '.card:focus .card__view {',
+        ' border: 2px solid #e1bd70 !important;',
+        ' box-shadow: 0 0 0 2px rgba(225,189,112,.2),',
+        ' 0 8px 28px rgba(0,0,0,.65) !important;',
+        ' transform: scale(1.035);',
         '}',
 
-        'body.' + CLASS_NAME + ' .card.focus .card__view,',
-        'body.' + CLASS_NAME + ' .card.hover .card__view,',
-        'body.' + CLASS_NAME + ' .card:focus .card__view {',
-        ' outline: 2px solid var(--fp-gold) !important;',
-        ' box-shadow: 0 0 18px rgba(214,182,109,.45) !important;',
+        '.menu { background: #10141c !important; }',
+        '.menu__item { border-radius: 9px !important; }',
+        '.menu__item.focus {',
+        ' background: rgba(214,182,109,.16) !important;',
+        ' border-left: 3px solid #d6b66d !important;',
         '}',
+        '.menu__text, .menu__ico { color: #eee5d4 !important; }',
 
-        'body.' + CLASS_NAME + ' .card__title,',
-        'body.' + CLASS_NAME + ' .card__name {',
-        ' color: var(--fp-text) !important;',
+        '.selector.focus { outline-color: #d6b66d !important; }',
+
+        '.full-start__title, .full-start-new__title {',
+        ' color: #e6c77f !important;',
         '}',
-
-        'body.' + CLASS_NAME + ' .selector.focus,',
-        'body.' + CLASS_NAME + ' .menu__item.focus,',
-        'body.' + CLASS_NAME + ' .settings-param.focus {',
-        ' border-color: var(--fp-gold) !important;',
+        '.full-start__button, .full-start-new__button {',
+        ' border-radius: 9px !important;',
         '}',
-
-        'body.' + CLASS_NAME + ' .full-start__button.focus,',
-        'body.' + CLASS_NAME + ' .full-start-new__button.focus {',
-        ' background: var(--fp-gold) !important;',
+        '.full-start__button.focus, .full-start-new__button.focus {',
+        ' background: #d6b66d !important;',
         ' color: #111 !important;',
         '}',
 
-        'body.' + CLASS_NAME + ' .modal__content,',
-        'body.' + CLASS_NAME + ' .selectbox,',
-        'body.' + CLASS_NAME + ' .settings,',
-        'body.' + CLASS_NAME + ' .menu {',
-        ' background-color: var(--fp-panel) !important;',
+        '.modal__content, .selectbox, .settings {',
+        ' background: #141923 !important;',
         '}',
 
-        'body.' + CLASS_NAME + ' .scroll__body {',
-        ' scrollbar-color: var(--fp-gold) var(--fp-bg);',
-        '}',
-
-        'body.' + CLASS_NAME + ' .tag,',
-        'body.' + CLASS_NAME + ' .card__quality {',
-        ' border-radius: 4px;',
+        '::-webkit-scrollbar-thumb {',
+        ' background: #d6b66d !important;',
+        ' border-radius: 10px;',
         '}'
     ].join('\n');
 
     function apply() {
-        if (!document.body || !document.head) return;
+        if (!document.head || !document.body) return;
 
-        document.body.classList.add(CLASS_NAME);
+        document.body.style.setProperty(
+            'background',
+            '#080a0e',
+            'important'
+        );
 
-        if (!document.getElementById(ID)) {
+        var old = document.getElementById(STYLE_ID);
+
+        if (!old) {
             var style = document.createElement('style');
-            style.id = ID;
+            style.id = STYLE_ID;
             style.type = 'text/css';
-            style.appendChild(document.createTextNode(CSS));
+            style.appendChild(document.createTextNode(css));
             document.head.appendChild(style);
         }
     }
@@ -108,15 +96,11 @@
         if (window.Lampa && Lampa.Listener &&
             typeof Lampa.Listener.follow === 'function') {
             Lampa.Listener.follow('app', function (event) {
-                if (event && event.type === 'ready') {
-                    apply();
-                }
+                if (event && event.type === 'ready') apply();
             });
         }
 
-        setInterval(apply, 3000);
-
-        console.log('[Filmix PRO+] Premium Gold loaded');
+        console.log('[Filmix PRO+] Premium V2 active');
     }
 
     if (document.readyState === 'loading') {
