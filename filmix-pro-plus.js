@@ -1,35 +1,37 @@
-
 (function () {
     'use strict';
 
     var PLUGIN = 'filmix_pro_plus';
-    var VERSION = '0.2.0';
+    var VERSION = '0.2.1';
     var MENU_ID = 'filmix-pro-plus-menu-entry';
     var CONTROLLER = 'filmix_pro_plus_controller';
 
-    if (window.filmix_pro_plus_ready) return;
-    window.filmix_pro_plus_ready = true;
+    // Защита от повторной загрузки одного и того же плагина.
+    if (window.filmix_pro_plus_loaded) return;
+    window.filmix_pro_plus_loaded = true;
+    window.filmix_pro_plus_ready = false;
 
     function log(message, error) {
-        if (window.console && console.log) {
+        if (window.console && typeof window.console.log === 'function') {
             if (error) console.log('[Filmix PRO+]', message, error);
             else console.log('[Filmix PRO+]', message);
         }
     }
 
     function notify(message) {
-        if (window.Lampa && Lampa.Noty && Lampa.Noty.show) {
+        if (window.Lampa && Lampa.Noty && typeof Lampa.Noty.show === 'function') {
             Lampa.Noty.show(message);
         }
     }
 
     function openHome() {
         if (!window.Lampa || !Lampa.Activity || !Lampa.Component) {
-            notify('Lampa ещё загружается. Попробуйте позже.');
+            notify('Lampa ещё загружается. Попробуйте немного позже.');
             return;
         }
 
-        if (!Lampa.Component.get || !Lampa.Component.get(PLUGIN)) {
+        if (typeof Lampa.Component.get !== 'function' ||
+            !Lampa.Component.get(PLUGIN)) {
             notify('Компонент Filmix PRO+ не зарегистрирован.');
             return;
         }
@@ -43,8 +45,27 @@
     }
 
     function Home(object) {
+        var $ = window.jQuery || window.$;
+
+        if (!$) {
+            throw new Error('jQuery is not available');
+        }
+
         var html = $('<div class="filmix-pro-plus" style="width:100%;min-height:100%;padding:2em;box-sizing:border-box;color:#fff;background:#090d18;"></div>');
         var lastFocused = null;
+        var controllerAdded = false;
+
+        function refreshFocus() {
+            if (!window.Lampa || !Lampa.Controller) return;
+
+            if (typeof Lampa.Controller.collectionSet === 'function') {
+                Lampa.Controller.collectionSet(html);
+            }
+
+            if (typeof Lampa.Controller.collectionFocus === 'function') {
+                Lampa.Controller.collectionFocus(lastFocused || false, html);
+            }
+        }
 
         function makeButton(profile, heading, description) {
             var button = $('<div class="selector filmix-pro-plus__profile" tabindex="0" role="button" style="max-width:680px;margin:1em auto;padding:1.5em;border:1px solid #9c8147;border-radius:14px;background:#151b29;text-align:center;"></div>');
@@ -64,13 +85,6 @@
             return button;
         }
 
-        function refreshFocus() {
-            if (!window.Lampa || !Lampa.Controller) return;
-
-            Lampa.Controller.collectionSet(html);
-            Lampa.Controller.collectionFocus(lastFocused || false, html);
-        }
-
         function renderProfiles() {
             html.empty();
 
@@ -84,24 +98,15 @@
                 '</div>'
             );
 
-            html.append(makeButton(
-                'adult',
-                'Взрослый',
-                'Фильмы и сериалы'
-            ));
+            html.append(makeButton('adult', 'Взрослый', 'Фильмы и сериалы'));
+            html.append(makeButton('child', 'Ребёнок', 'Мультфильмы и семейное кино'));
 
-            html.append(makeButton(
-                'child',
-                'Ребёнок',
-                'Мультфильмы и семейное кино'
-            ));
-
+            lastFocused = html.find('.filmix-pro-plus__profile').first();
             refreshFocus();
         }
 
         function showProfile(profile) {
             var isChild = profile === 'child';
-
             html.empty();
 
             html.append(
@@ -138,7 +143,6 @@
 
             html.append(back);
             lastFocused = back;
-
             refreshFocus();
         }
 
@@ -148,49 +152,61 @@
         };
 
         this.start = function () {
-            if (!window.Lampa || !Lampa.Controller) return;
+            if (!window.Lampa || !Lampa.Controller ||
+                typeof Lampa.Controller.add !== 'function') {
+                log('Controller API is not available.');
+                return;
+            }
 
-            Lampa.Controller.add(CONTROLLER, {
-                toggle: function () {
-                    Lampa.Controller.collectionSet(html);
-                    Lampa.Controller.collectionFocus(lastFocused || false, html);
-                },
+            // Не регистрируем один и тот же контроллер повторно.
+            if (!controllerAdded) {
+                Lampa.Controller.add(CONTROLLER, {
+                    toggle: function () {
+                        refreshFocus();
+                    },
 
-                left: function () {
-                    if (window.Lampa && Lampa.Controller) {
-                        Lampa.Controller.toggle('menu');
+                    left: function () {
+                        if (window.Lampa && Lampa.Controller &&
+                            typeof Lampa.Controller.toggle === 'function') {
+                            Lampa.Controller.toggle('menu');
+                        }
+                    },
+
+                    right: function () {
+                        if (typeof Navigator !== 'undefined' &&
+                            Navigator.canmove && Navigator.canmove('right')) {
+                            Navigator.move('right');
+                        }
+                    },
+
+                    up: function () {
+                        if (typeof Navigator !== 'undefined' &&
+                            Navigator.canmove && Navigator.canmove('up')) {
+                            Navigator.move('up');
+                        }
+                    },
+
+                    down: function () {
+                        if (typeof Navigator !== 'undefined' &&
+                            Navigator.canmove && Navigator.canmove('down')) {
+                            Navigator.move('down');
+                        }
+                    },
+
+                    back: function () {
+                        if (window.Lampa && Lampa.Activity &&
+                            typeof Lampa.Activity.backward === 'function') {
+                            Lampa.Activity.backward();
+                        }
                     }
-                },
+                });
 
-                right: function () {
-                    if (typeof Navigator !== 'undefined' &&
-                        Navigator.canmove('right')) {
-                        Navigator.move('right');
-                    }
-                },
+                controllerAdded = true;
+            }
 
-                up: function () {
-                    if (typeof Navigator !== 'undefined' &&
-                        Navigator.canmove('up')) {
-                        Navigator.move('up');
-                    }
-                },
-
-                down: function () {
-                    if (typeof Navigator !== 'undefined' &&
-                        Navigator.canmove('down')) {
-                        Navigator.move('down');
-                    }
-                },
-
-                back: function () {
-                    if (window.Lampa && Lampa.Activity) {
-                        Lampa.Activity.backward();
-                    }
-                }
-            });
-
-            Lampa.Controller.toggle(CONTROLLER);
+            if (typeof Lampa.Controller.toggle === 'function') {
+                Lampa.Controller.toggle(CONTROLLER);
+            }
         };
 
         this.stop = function () {};
@@ -203,67 +219,117 @@
             html.off();
             html.remove();
             lastFocused = null;
+
+            // Удаляем контроллер только если Lampa предоставляет такой метод.
+            if (controllerAdded && window.Lampa && Lampa.Controller &&
+                typeof Lampa.Controller.remove === 'function') {
+                Lampa.Controller.remove(CONTROLLER);
+            }
+
+            controllerAdded = false;
         };
     }
 
     function addMenuEntry() {
-        if (!window.jQuery && !window.$) return;
+        var attempts = 0;
+        var maxAttempts = 30;
 
-        var $ = window.jQuery || window.$;
-        var menu = $('.menu .menu__list').eq(0);
+        function tryAdd() {
+            var $ = window.jQuery || window.$;
 
-        if (!menu.length) {
-            log('Menu container not found.');
-            return;
+            if (!$) {
+                if (++attempts < maxAttempts) {
+                    setTimeout(tryAdd, 500);
+                } else {
+                    log('jQuery was not found; menu entry was not added.');
+                }
+                return;
+            }
+
+            var menu = $('.menu .menu__list').eq(0);
+
+            if (!menu.length) {
+                if (++attempts < maxAttempts) {
+                    setTimeout(tryAdd, 500);
+                } else {
+                    log('Menu container was not found after retrying.');
+                }
+                return;
+            }
+
+            if ($('#' + MENU_ID).length) return;
+
+            var item = $('<li id="' + MENU_ID + '" class="menu__item selector"><div class="menu__text">Filmix PRO+</div></li>');
+
+            item.on('hover:enter click', openHome);
+            menu.append(item);
+
+            log('Filmix PRO+ menu entry added.');
         }
 
-        if ($('#' + MENU_ID).length) return;
-
-        var item = $('<li id="' + MENU_ID + '" class="menu__item selector"><div class="menu__text">Filmix PRO+</div></li>');
-
-        item.on('hover:enter click', openHome);
-        menu.append(item);
+        tryAdd();
     }
 
     function init() {
-        if (!window.Lampa || !Lampa.Component || !Lampa.Activity) {
-            log('Lampa API is not available at app-ready time.');
-            window.filmix_pro_plus_ready = false;
-            return;
+        if (!window.Lampa || !Lampa.Component ||
+            !Lampa.Activity) {
+            log('Lampa API is not ready yet.');
+            return false;
         }
 
         try {
-            if (!Lampa.Component.get || !Lampa.Component.get(PLUGIN)) {
+            if (typeof Lampa.Component.get !== 'function' ||
+                !Lampa.Component.get(PLUGIN)) {
+
+                if (typeof Lampa.Component.add !== 'function') {
+                    throw new Error('Lampa.Component.add is not available');
+                }
+
                 Lampa.Component.add(PLUGIN, Home);
             }
 
             addMenuEntry();
 
+            window.filmix_pro_plus_ready = true;
             log('Initialized, version ' + VERSION);
-        }
-        catch (error) {
+
+            return true;
+
+        } catch (error) {
             window.filmix_pro_plus_ready = false;
             log('Initialization failed.', error);
-            notify('Не удалось запустить Filmix PRO+.');
+            notify('Не удалось запустить Filmix PRO+. Проверьте консоль.');
+            return false;
         }
     }
 
     function start() {
-        if (window.appready) {
-            init();
-        }
-        else if (window.Lampa &&
-                 Lampa.Listener &&
-                 Lampa.Listener.follow) {
+        var attempts = 0;
+        var maxAttempts = 40;
 
-            Lampa.Listener.follow('app', function (event) {
-                if (event.type === 'ready') init();
-            });
+        function waitForLampa() {
+            attempts++;
+
+            if (window.Lampa &&
+                window.Lampa.Component &&
+                window.Lampa.Activity &&
+                window.appready) {
+
+                init();
+                return;
+            }
+
+            if (attempts < maxAttempts) {
+                setTimeout(waitForLampa, 500);
+            } else {
+                window.filmix_pro_plus_ready = false;
+                window.filmix_pro_plus_loaded = false;
+
+                log('Lampa did not become ready within 20 seconds.');
+            }
         }
-        else {
-            window.filmix_pro_plus_ready = false;
-            log('Waiting for Lampa app-ready event.');
-        }
+
+        waitForLampa();
     }
 
     start();
