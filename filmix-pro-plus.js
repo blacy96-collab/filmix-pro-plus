@@ -1,224 +1,381 @@
+
 (function () {
     'use strict';
 
-    var PLUGIN = 'filmix_pro_plus';
-    var VERSION = '0.2.2';
-    var initialized = false;
-    var menuAdded = false;
+    var VERSION = '0.2.3-diagnostic';
+    var PLUGIN = 'filmix_pro_plus_diag';
+    var KEY = 'filmix_pro_plus_v023_loaded';
 
-    if (window.filmix_pro_plus_v022_loaded) return;
+    var state = {
+        version: VERSION,
+        startedAt: new Date().toISOString(),
+        appReady: false,
+        checks: {},
+        errors: [],
+        menuAttempted: false,
+        menuAdded: false,
+        componentAdded: false
+    };
 
-    function log(message, error) {
-        if (window.console && console.log) {
-            console.log('[Filmix PRO+ ' + VERSION + ']', message, error || '');
-        }
+    if (window[KEY]) {
+        console.log('[Filmix PRO+ ' + VERSION + '] already loaded');
+        return;
     }
 
-    function showError(message) {
-        if (window.Lampa && Lampa.Noty && typeof Lampa.Noty.show === 'function') {
-            Lampa.Noty.show(message);
-        } else {
-            log(message);
-        }
+    window[KEY] = true;
+    window.filmix_pro_plus_diagnostics = state;
+
+    function check(name, ok, detail) {
+        state.checks[name] = {
+            ok: !!ok,
+            detail: detail || ''
+        };
+
+        console.log(
+            '[Filmix PRO+ ' + VERSION + '] ' +
+            name + ': ' + (ok ? 'OK' : 'FAIL') +
+            (detail ? ' — ' + detail : '')
+        );
     }
 
-    function openHome() {
+    function recordError(stage, err) {
+        var message = err && err.message
+            ? err.message
+            : String(err || 'unknown error');
+
+        state.errors.push({
+            stage: stage,
+            message: message
+        });
+
+        console.error(
+            '[Filmix PRO+ ' + VERSION + '] ' + stage,
+            err || ''
+        );
+    }
+
+    function reportText() {
+        var lines = [
+            'Filmix PRO+ diagnostic ' + VERSION
+        ];
+
+        Object.keys(state.checks).forEach(function (name) {
+            var item = state.checks[name];
+
+            lines.push(
+                (item.ok ? '[OK] ' : '[FAIL] ') +
+                name +
+                (item.detail ? ': ' + item.detail : '')
+            );
+        });
+
+        if (state.errors.length) {
+            lines.push('Ошибки:');
+
+            state.errors.forEach(function (item) {
+                lines.push(
+                    item.stage + ': ' + item.message
+                );
+            });
+        }
+
+        return lines.join('\n');
+    }
+
+    function notify() {
+        var message =
+            'Filmix PRO+ диагностика ' + VERSION +
+            ': компонент ' +
+            (state.componentAdded ? 'OK' : 'ошибка') +
+            ', кнопка меню ' +
+            (state.menuAdded ? 'OK' : 'не добавлена') +
+            '. Подробности — в консоли Luxo/Lampa.';
+
         try {
-            if (!window.Lampa || !Lampa.Activity) {
-                showError('Lampa ещё загружается. Попробуйте позже.');
-                return;
+            if (
+                window.Lampa &&
+                Lampa.Noty &&
+                typeof Lampa.Noty.show === 'function'
+            ) {
+                Lampa.Noty.show(message);
+            }
+        } catch (e) {
+            recordError('Noty.show', e);
+        }
+    }
+
+    function DiagnosticScreen() {
+        var $ = window.jQuery || window.$;
+        var root;
+
+        this.create = function () {
+            if (!$) {
+                throw new Error('jQuery Lampa недоступен');
             }
 
-            Lampa.Activity.push({
-                url: '',
-                title: 'Filmix PRO+',
-                component: PLUGIN,
-                page: 1
-            });
-        } catch (error) {
-            log('Не удалось открыть экран плагина.', error);
-            showError('Filmix PRO+: не удалось открыть экран.');
-        }
-    }
-
-    function Home() {
-        var $ = window.jQuery || window.$;
-        var html;
-        var controllerActive = false;
-
-        if (!$) throw new Error('Не найден jQuery Lampa');
-
-        html = $('<div class="filmix-pro-plus" style="width:100%;min-height:100%;padding:3em 2em;box-sizing:border-box;background:#090d18;color:#fff;"></div>');
-
-        function render() {
-            html.empty();
-
-            html.append(
-                '<div style="max-width:900px;margin:0 auto;text-align:center;">' +
-                    '<div style="font-size:2em;font-weight:bold;letter-spacing:.08em;color:#e2c783;">FILMIX PRO+</div>' +
-                    '<div style="margin:.6em 0 2em;color:#c4cad7;">Тест запуска интерфейса · версия ' + VERSION + '</div>' +
-                    '<h2 style="margin-bottom:1.5em;">Выберите профиль</h2>' +
+            root = $(
+                '<div class="filmix-pro-plus-diagnostic" ' +
+                'style="padding:3em;color:#fff;white-space:pre-wrap;">' +
                 '</div>'
             );
 
-            var adult = $('<div class="selector" tabindex="0" style="max-width:650px;margin:1em auto;padding:1.5em;border:1px solid #9c8147;border-radius:14px;background:#151b29;text-align:center;"><h2 style="color:#e2c783;margin:0 0 .4em;">Взрослый</h2><div>Фильмы и сериалы</div></div>');
+            root.text(reportText());
 
-            var child = $('<div class="selector" tabindex="0" style="max-width:650px;margin:1em auto;padding:1.5em;border:1px solid #9c8147;border-radius:14px;background:#151b29;text-align:center;"><h2 style="color:#e2c783;margin:0 0 .4em;">Ребёнок</h2><div>Мультфильмы и семейное кино</div></div>');
-
-            adult.on('hover:enter click', function () {
-                showProfile('Взрослый', 'Здесь появится каталог фильмов и сериалов Filmix.');
-            });
-
-            child.on('hover:enter click', function () {
-                showProfile('Детский', 'Здесь появится каталог мультфильмов и семейного кино.');
-            });
-
-            html.append(adult, child);
-
-            if (window.Lampa && Lampa.Controller &&
-                typeof Lampa.Controller.collectionSet === 'function') {
-                Lampa.Controller.collectionSet(html);
-
-                if (typeof Lampa.Controller.collectionFocus === 'function') {
-                    Lampa.Controller.collectionFocus(adult, html);
-                }
-            }
-        }
-
-        function showProfile(title, description) {
-            html.empty();
-
-            html.append(
-                $('<div style="max-width:850px;margin:0 auto;text-align:center;padding-top:2em;"></div>')
-                    .append($('<div style="font-size:1.8em;color:#e2c783;font-weight:bold;">FILMIX PRO+</div>'))
-                    .append($('<h2></h2>').text(title))
-                    .append($('<p style="color:#c4cad7;"></p>').text(description))
-                    .append($('<p style="color:#aeb6c5;margin:2em 0;">Тестовая версия. Каталог и авторизация Filmix ещё не подключены.</p>'))
-            );
-
-            var back = $('<div class="selector" tabindex="0" style="max-width:500px;margin:2em auto;padding:1.2em;border:1px solid #9c8147;border-radius:12px;text-align:center;color:#e2c783;background:#151b29;">← Назад к профилям</div>');
-
-            back.on('hover:enter click', render);
-            html.append(back);
-
-            if (window.Lampa && Lampa.Controller &&
-                typeof Lampa.Controller.collectionSet === 'function') {
-                Lampa.Controller.collectionSet(html);
-
-                if (typeof Lampa.Controller.collectionFocus === 'function') {
-                    Lampa.Controller.collectionFocus(back, html);
-                }
-            }
-        }
-
-        this.create = function () {
-            render();
-            return html;
+            return root;
         };
 
         this.render = function () {
-            return html;
+            return root;
         };
 
         this.start = function () {
-            if (window.Lampa && Lampa.Controller &&
-                typeof Lampa.Controller.toggle === 'function') {
+            if (
+                window.Lampa &&
+                Lampa.Controller &&
+                typeof Lampa.Controller.toggle === 'function'
+            ) {
                 Lampa.Controller.toggle('content');
-                controllerActive = true;
             }
         };
 
+        this.pause = function () {};
         this.stop = function () {};
 
         this.destroy = function () {
-            html.off();
-            html.find('*').off();
-            html.remove();
-
-            if (controllerActive && window.Lampa && Lampa.Controller &&
-                typeof Lampa.Controller.toggle === 'function') {
-                Lampa.Controller.toggle('content');
+            if (root) {
+                root.remove();
             }
 
-            controllerActive = false;
+            if (
+                window.Lampa &&
+                Lampa.Controller &&
+                typeof Lampa.Controller.toggle === 'function'
+            ) {
+                Lampa.Controller.toggle('content');
+            }
         };
     }
 
-    function registerPlugin() {
-        if (initialized) return true;
+    function openDiagnostics() {
+        try {
+            if (
+                window.Lampa &&
+                Lampa.Activity &&
+                typeof Lampa.Activity.push === 'function'
+            ) {
+                Lampa.Activity.push({
+                    url: '',
+                    title: 'Filmix PRO+ — диагностика',
+                    component: PLUGIN,
+                    page: 1
+                });
+            }
+        } catch (e) {
+            recordError('Activity.push', e);
+            notify();
+        }
+    }
 
-        if (!window.Lampa || !Lampa.Component || !Lampa.Activity) {
-            return false;
+    function runChecks() {
+        state.appReady = !!window.appready;
+
+        check('window.Lampa', !!window.Lampa);
+        check('appready', state.appReady);
+
+        check(
+            'jQuery',
+            !!(window.jQuery || window.$)
+        );
+
+        check(
+            'Lampa.Component.add',
+            !!(
+                window.Lampa &&
+                Lampa.Component &&
+                typeof Lampa.Component.add === 'function'
+            )
+        );
+
+        check(
+            'Lampa.Activity.push',
+            !!(
+                window.Lampa &&
+                Lampa.Activity &&
+                typeof Lampa.Activity.push === 'function'
+            )
+        );
+
+        check(
+            'Lampa.Menu.addButton',
+            !!(
+                window.Lampa &&
+                Lampa.Menu &&
+                typeof Lampa.Menu.addButton === 'function'
+            ),
+            window.Lampa &&
+            Lampa.Menu &&
+            Lampa.Menu.addButton
+                ? 'function.length=' + Lampa.Menu.addButton.length
+                : 'метод отсутствует'
+        );
+
+        check(
+            'Lampa.Noty.show',
+            !!(
+                window.Lampa &&
+                Lampa.Noty &&
+                typeof Lampa.Noty.show === 'function'
+            )
+        );
+
+        check(
+            'Lampa.Controller',
+            !!(window.Lampa && Lampa.Controller)
+        );
+
+        check(
+            'Lampa.Controller.collectionSet',
+            !!(
+                window.Lampa &&
+                Lampa.Controller &&
+                typeof Lampa.Controller.collectionSet === 'function'
+            )
+        );
+
+        check(
+            'Lampa.Listener.follow',
+            !!(
+                window.Lampa &&
+                Lampa.Listener &&
+                typeof Lampa.Listener.follow === 'function'
+            )
+        );
+
+        try {
+            if (
+                window.Lampa &&
+                Lampa.Component &&
+                typeof Lampa.Component.add === 'function'
+            ) {
+                Lampa.Component.add(
+                    PLUGIN,
+                    DiagnosticScreen
+                );
+
+                state.componentAdded = true;
+
+                check(
+                    'register component',
+                    true,
+                    PLUGIN
+                );
+            } else {
+                check(
+                    'register component',
+                    false,
+                    'Lampa.Component.add отсутствует'
+                );
+            }
+        } catch (e) {
+            recordError('Component.add', e);
+
+            check(
+                'register component',
+                false,
+                e.message
+            );
         }
 
         try {
-            if (typeof Lampa.Component.add !== 'function') {
-                throw new Error('Lampa.Component.add недоступен');
+            if (
+                window.Lampa &&
+                Lampa.Menu &&
+                typeof Lampa.Menu.addButton === 'function'
+            ) {
+                state.menuAttempted = true;
+
+                var icon =
+                    '<svg xmlns="http://www.w3.org/2000/svg" ' +
+                    'viewBox="0 0 24 24">' +
+                    '<path fill="currentColor" ' +
+                    'd="M4 4h16v3H4zm0 6h16v3H4zm0 6h16v3H4z"/>' +
+                    '</svg>';
+
+                Lampa.Menu.addButton(
+                    icon,
+                    'Filmix PRO+ диагностика',
+                    openDiagnostics
+                );
+
+                state.menuAdded = true;
+
+                check(
+                    'add menu button',
+                    true,
+                    'вызов addButton завершился без ошибки'
+                );
+            } else {
+                check(
+                    'add menu button',
+                    false,
+                    'Lampa.Menu.addButton недоступен'
+                );
             }
+        } catch (e) {
+            recordError('Menu.addButton', e);
 
-            Lampa.Component.add(PLUGIN, Home);
-
-            if (Lampa.Menu && typeof Lampa.Menu.addButton === 'function' && !menuAdded) {
-                var icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16v3H4zm0 6h16v3H4zm0 6h16v3H4z"/></svg>';
-
-                Lampa.Menu.addButton(icon, 'Filmix PRO+', openHome);
-                menuAdded = true;
-            } else if (!menuAdded) {
-                throw new Error('Lampa.Menu.addButton недоступен в этой версии');
-            }
-
-            initialized = true;
-            window.filmix_pro_plus_ready = true;
-            window.filmix_pro_plus_v022_loaded = true;
-
-            log('Плагин зарегистрирован. Нажмите Filmix PRO+ в главном меню.');
-
-            return true;
-
-        } catch (error) {
-            window.filmix_pro_plus_ready = false;
-            log('Ошибка регистрации плагина.', error);
-            showError('Filmix PRO+: ошибка регистрации. Проверьте совместимость Luxo.');
-
-            return false;
+            check(
+                'add menu button',
+                false,
+                e.message
+            );
         }
+
+        state.finishedAt = new Date().toISOString();
+
+        console.log(
+            '[Filmix PRO+ ' + VERSION + '] FULL REPORT\n' +
+            reportText()
+        );
+
+        notify();
     }
 
     function bootstrap() {
         var attempts = 0;
         var maxAttempts = 100;
 
-        function check() {
+        var timer = setInterval(function () {
             attempts++;
 
             if (window.Lampa && window.appready) {
-                if (registerPlugin()) return;
+                clearInterval(timer);
+                runChecks();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(timer);
+
+                check(
+                    'Lampa ready within 30s',
+                    false,
+                    'тайм-аут ожидания приложения'
+                );
+
+                state.finishedAt = new Date().toISOString();
+
+                console.log(
+                    '[Filmix PRO+ ' + VERSION + '] FULL REPORT\n' +
+                    reportText()
+                );
+
+                notify();
             }
-
-            if (attempts < maxAttempts) {
-                setTimeout(check, 300);
-            } else {
-                log('Lampa не стала готова за 30 секунд.');
-                showError('Filmix PRO+: Lampa не завершила загрузку.');
-            }
-        }
-
-        if (window.appready) {
-            check();
-        } else if (window.Lampa && Lampa.Listener &&
-                   typeof Lampa.Listener.follow === 'function') {
-
-            Lampa.Listener.follow('app', function (event) {
-                if (event && event.type === 'ready') {
-                    check();
-                }
-            });
-
-            setTimeout(check, 1000);
-        } else {
-            check();
-        }
+        }, 300);
     }
 
+    console.log(
+        '[Filmix PRO+ ' + VERSION + '] script loaded'
+    );
+
     bootstrap();
+
 })();
