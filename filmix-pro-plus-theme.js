@@ -79,35 +79,47 @@ body.${CLASS_NAME} .settings {
     color: var(--fp-text) !important;
 }
 
-/* Кнопка Filmix — размер под соседние значки */
+/* Компактная кнопка Filmix — под размер соседних значков */
 #${BUTTON_ID} {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    flex: 0 0 34px !important;
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
-    min-height: 34px !important;
-    max-width: 34px !important;
-    max-height: 34px !important;
+
+    box-sizing: border-box !important;
+    flex: 0 0 26px !important;
+
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+    max-width: 26px !important;
+    max-height: 26px !important;
+
     padding: 0 !important;
     margin: 0 4px !important;
+
     border-radius: 50% !important;
+    border: 1px solid var(--fp-gold) !important;
+
     color: var(--fp-gold-light) !important;
     background: #202630 !important;
-    border: 1px solid var(--fp-gold) !important;
-    box-sizing: border-box !important;
-    cursor: pointer !important;
+
     overflow: hidden !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
 }
 
 #${BUTTON_ID} svg {
     display: block !important;
-    width: 17px !important;
-    height: 17px !important;
-    min-width: 17px !important;
-    min-height: 17px !important;
+    flex: 0 0 14px !important;
+
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
+    max-width: 14px !important;
+    max-height: 14px !important;
+
     fill: currentColor !important;
 }
 
@@ -297,7 +309,7 @@ body.${CLASS_NAME} .settings {
 
         console.log('[Filmix Theme] Started');
         console.log('[Filmix Theme] Enabled:', enabled);
-        console.log('[Filmix Theme] Version: 1.2.0');
+        console.log('[Filmix Theme] Version: 1.3.0');
     }
 
     if (document.readyState === 'loading') {
