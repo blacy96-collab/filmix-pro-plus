@@ -1,490 +1,726 @@
 
 (function () {
-'use strict';
+    'use strict';
 
-/* Filmix PRO+ for Lampa — v1.3.0 */
-var VERSION = '1.3.0';
-var STYLE_ID = 'filmix-pro-plus-css';
-var BUTTON_ID = 'filmix-pro-plus-button';
-var THEME_KEY = 'filmix_pro_plus_theme_enabled';
-var API = 'http://filmixapp.cyou/api/v2/';
+    /* Filmix PRO+ Cardify Edition — v2.0.0 */
+    var VERSION = '2.0.0';
+    var COMPONENT = 'filmix_pro_plus';
+    var STYLE_ID = 'filmix-pro-plus-unified-style';
+    var API_URL = 'http://filmixapp.cyou/api/v2/';
 
-if (window.__FILMIX_PRO_PLUS_STARTED__) return;
-window.__FILMIX_PRO_PLUS_STARTED__ = true;
+    var STORAGE = {
+        enabled: 'filmix_pro_plus_enabled',
+        cardify: 'filmix_pro_plus_cardify',
+        theme: 'filmix_pro_plus_theme',
+        token: 'filmix_token',
+        status: 'filmix_status',
+        device: 'filmix_pro_plus_device_id'
+    };
 
-var enabled = true;
-var observer = null;
-var initialized = false;
-var profileRequest = null;
-var authRequest = null;
-var pollTimer = null;
-var authBody = null;
-var authCode = '';
-var authToken = '';
-var authDeviceQuery = '';
-var authInProgress = false;
+    if (window.__FILMIX_PRO_PLUS_UNIFIED__) return;
+    window.__FILMIX_PRO_PLUS_UNIFIED__ = true;
 
-var css = `
-:root{--fp-bg:#090c11;--fp-panel:#171d25;--fp-gold:#d7b56d;--fp-gold-light:#f5dfaa;--fp-text:#f4f1e9}
-body.filmix-pro-plus-theme{background:var(--fp-bg)!important;color:var(--fp-text)!important}
-body.filmix-pro-plus-theme .head,body.filmix-pro-plus-theme .head__body{background:rgba(9,12,17,.97)!important}
-body.filmix-pro-plus-theme .head__title,body.filmix-pro-plus-theme .menu__title,body.filmix-pro-plus-theme .category__title,body.filmix-pro-plus-theme .full-start__title,body.filmix-pro-plus-theme .full-start-new__title{color:var(--fp-gold-light)!important}
-body.filmix-pro-plus-theme .items-line__head{border-bottom:1px solid rgba(215,181,109,.35)!important}
-body.filmix-pro-plus-theme .card__view{border-radius:10px!important;overflow:hidden!important}
-body.filmix-pro-plus-theme .card.focus .card__view,body.filmix-pro-plus-theme .card.traverse .card__view{outline:2px solid var(--fp-gold)!important;outline-offset:2px!important;box-shadow:0 0 18px rgba(215,181,109,.3)!important}
-body.filmix-pro-plus-theme .card__title{color:var(--fp-text)!important}
-body.filmix-pro-plus-theme .menu{background:var(--fp-panel)!important}
-body.filmix-pro-plus-theme .menu__item.focus,body.filmix-pro-plus-theme .selector.focus,body.filmix-pro-plus-theme .full-start__button.focus,body.filmix-pro-plus-theme .full-start-new__button.focus{background:var(--fp-gold)!important;color:#17130b!important;border-color:var(--fp-gold-light)!important}
-body.filmix-pro-plus-theme .modal__content,body.filmix-pro-plus-theme .selectbox,body.filmix-pro-plus-theme .settings{background:var(--fp-panel)!important;color:var(--fp-text)!important}
-#${BUTTON_ID}{display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;width:19px!important;height:19px!important;min-width:19px!important;min-height:19px!important;max-width:19px!important;max-height:19px!important;flex:0 0 19px!important;padding:0!important;margin:0 4px!important;border-radius:50%!important;border:1px solid rgba(255,255,255,.12)!important;background:#202127!important;color:#e7c77f!important;overflow:hidden!important}
-#${BUTTON_ID} svg{display:block!important;width:10px!important;height:10px!important;fill:currentColor!important}
-#${BUTTON_ID}.off{color:#9299a2!important}#${BUTTON_ID}:focus{outline:1px solid var(--fp-gold)!important;outline-offset:1px!important}
-`;
+    var network = null;
+    var pollTimer = null;
+    var authToken = '';
+    var authCode = '';
+    var authModal = null;
+    var deviceQuery = '';
+    var initialized = false;
+    var settingsRegistered = false;
 
-function log(message, error) {
-    console.log('[Filmix PRO+ ' + VERSION + '] ' + message);
-    if (error) console.error('[Filmix PRO+]', error);
-}
-
-function notify(message) {
-    try {
-        if (window.Lampa && Lampa.Noty && Lampa.Noty.show) Lampa.Noty.show(message);
-    } catch (e) {
-        log('Notification error', e);
+    function log() {
+        var args = Array.prototype.slice.call(arguments);
+        args.unshift('[Filmix PRO+ ' + VERSION + ']');
+        if (window.console && console.log) console.log.apply(console, args);
     }
-}
 
-function readTheme() {
-    try {
-        return Lampa.Storage.get(THEME_KEY, true) !== false;
-    } catch (e) {
+    function storageGet(key, fallback) {
         try {
-            return localStorage.getItem(THEME_KEY) !== 'false';
-        } catch (x) {
-            return true;
+            var value = Lampa.Storage.get(key, fallback);
+            return value === undefined || value === null ? fallback : value;
+        } catch (e) {
+            return fallback;
         }
     }
-}
 
-function saveTheme() {
-    try {
-        Lampa.Storage.set(THEME_KEY, enabled);
-    } catch (e) {}
-    try {
-        localStorage.setItem(THEME_KEY, enabled ? 'true' : 'false');
-    } catch (e) {}
-}
+    function storageSet(key, value) {
+        try {
+            Lampa.Storage.set(key, value);
+        } catch (e) {
+            log('Storage error', key, e);
+        }
+    }
 
-function installStyle() {
-    if (!document.head || !document.body) return;
+    function isEnabled() {
+        return storageGet(STORAGE.enabled, true) !== false;
+    }
 
-    var style = document.getElementById(STYLE_ID);
+    function isCardify() {
+        return storageGet(STORAGE.cardify, true) !== false;
+    }
 
-    if (!style) {
-        style = document.createElement('style');
+    function themeName() {
+        return storageGet(STORAGE.theme, 'navy_gold');
+    }
+
+    var themes = {
+        navy_gold: {
+            bg: '#090c11',
+            panel: '#171d25',
+            gold: '#d7b56d',
+            text: '#f4f1e9'
+        },
+        graphite: {
+            bg: '#101114',
+            panel: '#202329',
+            gold: '#c7cbd1',
+            text: '#f5f5f5'
+        },
+        black_red: {
+            bg: '#090909',
+            panel: '#191313',
+            gold: '#d65b55',
+            text: '#f5eeee'
+        }
+    };
+
+    function applyTheme() {
+        var old = document.getElementById(STYLE_ID);
+
+        if (old) old.parentNode.removeChild(old);
+
+        document.body.classList.remove('filmix-pro-plus-theme');
+
+        if (!isEnabled()) return;
+
+        var t = themes[themeName()] || themes.navy_gold;
+
+        var css = `
+        :root {
+            --fpp-bg:${t.bg};
+            --fpp-panel:${t.panel};
+            --fpp-accent:${t.gold};
+            --fpp-text:${t.text};
+        }
+
+        body.filmix-pro-plus-theme {
+            background:var(--fpp-bg)!important;
+            color:var(--fpp-text)!important;
+        }
+
+        body.filmix-pro-plus-theme .head,
+        body.filmix-pro-plus-theme .head__body {
+            background:rgba(9,12,17,.96)!important;
+        }
+
+        body.filmix-pro-plus-theme .menu {
+            background:var(--fpp-panel)!important;
+        }
+
+        body.filmix-pro-plus-theme .head__title,
+        body.filmix-pro-plus-theme .menu__title,
+        body.filmix-pro-plus-theme .category__title,
+        body.filmix-pro-plus-theme .full-start__title,
+        body.filmix-pro-plus-theme .full-start-new__title {
+            color:var(--fpp-accent)!important;
+        }
+
+        body.filmix-pro-plus-theme .items-line__head {
+            border-bottom:1px solid rgba(215,181,109,.38)!important;
+        }
+
+        body.filmix-pro-plus-theme .card__view {
+            border-radius:10px!important;
+            overflow:hidden!important;
+        }
+
+        body.filmix-pro-plus-theme .card.focus .card__view,
+        body.filmix-pro-plus-theme .card.traverse .card__view {
+            outline:2px solid var(--fpp-accent)!important;
+            outline-offset:2px!important;
+            box-shadow:0 0 18px rgba(215,181,109,.3)!important;
+        }
+
+        body.filmix-pro-plus-theme .card__title {
+            color:var(--fpp-text)!important;
+        }
+
+        body.filmix-pro-plus-theme .settings-folder.focus,
+        body.filmix-pro-plus-theme .settings-param.focus {
+            border-color:var(--fpp-accent)!important;
+        }
+
+        ${isCardify() ? `
+        .full-start-new.cardify-fpp .full-start-new__body {
+            height:80vh;
+        }
+
+        .full-start-new.cardify-fpp .full-start-new__right {
+            display:flex;
+            align-items:flex-end;
+            gap:1.5em;
+        }
+
+        .full-start-new.cardify-fpp .full-start-new__left {
+            flex:1;
+            min-width:0;
+        }
+
+        .full-start-new.cardify-fpp .full-start-new__reactions {
+            margin:0;
+            margin-right:-2.8em;
+        }
+
+        .full-start-new.cardify-fpp .full-start-new__reactions:not(.focus) {
+            margin:0;
+        }
+
+        .full-start-new.cardify-fpp .full-start-new__reactions:not(.focus)>div:not(:first-child) {
+            display:none;
+        }
+
+        .full-start-new.cardify-fpp .full-start-new__rate-line {
+            margin:0;
+            margin-left:3.5em;
+        }
+
+        .full-start-new.cardify-fpp .full-start-new__rate-line>*:last-child {
+            margin-right:0!important;
+        }
+
+        .full-start-new.cardify-fpp .full-start-new__background {
+            left:0;
+        }
+        ` : ''}
+        `;
+
+        var style = document.createElement('style');
         style.id = STYLE_ID;
+        style.textContent = css;
+
         document.head.appendChild(style);
+        document.body.classList.add('filmix-pro-plus-theme');
     }
 
-    if (style.textContent !== css) style.textContent = css;
+    function updateCardifyClass() {
+        var nodes = document.querySelectorAll('.full-start-new');
 
-    document.body.classList.toggle('filmix-pro-plus-theme', enabled);
-}
-
-function updateButton() {
-    var button = document.getElementById(BUTTON_ID);
-    if (!button) return;
-
-    button.classList.toggle('off', !enabled);
-    button.setAttribute('aria-label', enabled ? 'Выключить оформление' : 'Включить оформление');
-}
-
-function toggleTheme() {
-    enabled = !enabled;
-    saveTheme();
-    installStyle();
-    updateButton();
-
-    notify(enabled ? 'Filmix PRO+: оформление включено' : 'Filmix PRO+: оформление выключено');
-}
-
-function findHeader() {
-    return document.querySelector('.head__actions, .head__actions-list, .head__right');
-}
-
-function installButton() {
-    var header = findHeader();
-    if (!header) return false;
-
-    var button = document.getElementById(BUTTON_ID);
-
-    if (button && button.isConnected && header.contains(button)) return true;
-    if (button) button.remove();
-
-    button = document.createElement('button');
-    button.id = BUTTON_ID;
-    button.type = 'button';
-    button.className = 'selector';
-
-    button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.5 6.2L21 10l-6.5 2.1L12 18l-2.5-5.9L3 10l6.5-1.8z"/></svg>';
-
-    button.addEventListener('click', function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        toggleTheme();
-    });
-
-    var more = header.querySelector('.head__action--more,[data-action="more"],.head__action--menu');
-
-    if (more) header.insertBefore(button, more);
-    else header.appendChild(button);
-
-    updateButton();
-    return true;
-}
-
-function refresh() {
-    installStyle();
-    installButton();
-}
-
-function startObserver() {
-    if (observer || !window.MutationObserver || !document.documentElement) return;
-
-    observer = new MutationObserver(function () {
-        if (!document.getElementById(STYLE_ID) ||
-            !document.getElementById(BUTTON_ID) ||
-            (document.body && document.body.classList.contains('filmix-pro-plus-theme') !== enabled)) {
-            refresh();
+        for (var i = 0; i < nodes.length; i++) {
+            if (isEnabled() && isCardify()) {
+                nodes[i].classList.add('cardify-fpp');
+            } else {
+                nodes[i].classList.remove('cardify-fpp');
+            }
         }
-    });
-
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true
-    });
-}
-
-/* Авторизация Filmix */
-function deviceQuery() {
-    if (!authDeviceQuery) {
-        var uid = Lampa.Utils && Lampa.Utils.uid
-            ? Lampa.Utils.uid(16)
-            : 'filmixproplus0001';
-
-        authDeviceQuery =
-            '?user_dev_apk=1.1.3&user_dev_id=' + encodeURIComponent(uid) +
-            '&user_dev_name=Xiaomi&user_dev_os=11&user_dev_vendor=Xiaomi&user_dev_token=';
     }
 
-    return authDeviceQuery;
-}
+    function addFullListener() {
+        if (!Lampa.Listener || !Lampa.Listener.follow) return;
 
-function networkProfile() {
-    if (!profileRequest) profileRequest = new Lampa.Reguest();
-    return profileRequest;
-}
-
-function networkAuth() {
-    if (!authRequest) authRequest = new Lampa.Reguest();
-    return authRequest;
-}
-
-function accountStatusText(status) {
-    if (!status || !status.login) return 'Устройство не авторизовано';
-
-    if (status.is_pro_plus) {
-        return status.login + ' — PRO+ до ' + (status.pro_date || 'не указано');
+        Lampa.Listener.follow('full', function (e) {
+            if (e.type === 'complite' || e.type === 'complete') {
+                setTimeout(updateCardifyClass, 0);
+            }
+        });
     }
 
-    if (status.is_pro) {
-        return status.login + ' — PRO до ' + (status.pro_date || 'не указано');
-    }
-
-    return status.login + ' — FREE';
-}
-
-function renderAccountStatus(body) {
-    if (!body || !body.length) return;
-
-    body.find('[data-name="filmix_status"]').remove();
-
-    var status = Lampa.Storage.get('filmix_status', {});
-
-    var row = $('<div class="settings-param" data-name="filmix_status" data-static="true"><div class="settings-param__name">Статус аккаунта</div><div class="settings-param__value"></div></div>');
-
-    row.find('.settings-param__value').text(accountStatusText(status));
-
-    body.find('[data-name="filmix_add"]').after(row);
-}
-
-function checkProfile(token, callback, silent) {
-    if (!token) return;
-
-    var request = networkProfile();
-
-    request.clear();
-    request.timeout(8000);
-
-    request.silent(API + 'user_profile' + deviceQuery() + token, function (json) {
-        if (json && json.user_data) {
-            Lampa.Storage.set('filmix_status', json.user_data);
-
-            if (typeof callback === 'function') callback(json.user_data);
+    function notify(message) {
+        if (Lampa.Noty && Lampa.Noty.show) {
+            Lampa.Noty.show(message);
         } else {
-            Lampa.Storage.set('filmix_status', {});
+            log(message);
+        }
+    }
+
+    function getDeviceQuery() {
+        if (deviceQuery) return deviceQuery;
+
+        var uid = storageGet(STORAGE.device, '');
+
+        if (!uid) {
+            uid = Lampa.Utils && Lampa.Utils.uid
+                ? Lampa.Utils.uid(16)
+                : ('fpp' + Math.random().toString(36).slice(2, 14));
+
+            storageSet(STORAGE.device, uid);
         }
 
-        if (authBody) renderAccountStatus(authBody);
-    }, function (a, c) {
-        if (!silent) notify(request.errorDecode(a, c));
-    });
-}
+        deviceQuery =
+            '?user_dev_apk=1.1.3' +
+            '&user_dev_id=' + encodeURIComponent(uid) +
+            '&user_dev_name=AppleTV' +
+            '&user_dev_os=tvOS' +
+            '&user_dev_vendor=Apple' +
+            '&user_dev_token=';
 
-function stopAuth() {
-    if (pollTimer) {
-        clearInterval(pollTimer);
+        return deviceQuery;
+    }
+
+    function stopPolling() {
+        if (pollTimer) clearInterval(pollTimer);
         pollTimer = null;
     }
 
-    authInProgress = false;
-}
+    function closeAuthModal() {
+        stopPolling();
 
-function openDeviceAuth(body) {
-    if (authInProgress) return;
-
-    authInProgress = true;
-    authBody = body;
-    authCode = '';
-    authToken = '';
-
-    var request = networkAuth();
-
-    var modal = $('<div><div class="broadcast__text">Открой filmix.ac/consoles в своём аккаунте Filmix и введи показанный код.</div><div class="broadcast__device selector" style="text-align:center;font-size:1.5em;padding:1em 0">Получаем код…</div><div style="text-align:center;opacity:.75">Нажми OK на коде, чтобы скопировать его</div></div>');
-
-    Lampa.Modal.open({
-        title: 'Подключение Filmix',
-        html: modal,
-
-        onBack: function () {
-            stopAuth();
+        if (Lampa.Modal && Lampa.Modal.close) {
             Lampa.Modal.close();
-            Lampa.Controller.toggle('settings_component');
-        },
+        }
 
-        onSelect: function () {
-            if (!authCode) return;
+        authModal = null;
+    }
 
-            if (Lampa.Utils && Lampa.Utils.copyTextToClipboard) {
-                Lampa.Utils.copyTextToClipboard(
-                    authCode,
-                    function () { notify('Код скопирован'); },
-                    function () { notify('Не удалось скопировать код'); }
-                );
-            } else {
-                notify('Код для ввода: ' + authCode);
+    function profileRequest(token, callback) {
+        if (!network) network = new Lampa.Reguest();
+
+        network.clear();
+        network.timeout(10000);
+
+        network.silent(
+            API_URL + 'user_profile' + getDeviceQuery() + token,
+
+            function (json) {
+                if (json && json.user_data) {
+                    storageSet(STORAGE.status, json.user_data);
+
+                    if (callback) callback(json.user_data);
+                } else {
+                    storageSet(STORAGE.status, {});
+                }
+
+                renderStatus();
+            },
+
+            function (a, c) {
+                notify(network.errorDecode(a, c));
+            }
+        );
+    }
+
+    function accountStatusText() {
+        var status = storageGet(STORAGE.status, {});
+
+        if (typeof status === 'string') {
+            try {
+                status = JSON.parse(status);
+            } catch (e) {
+                status = {};
             }
         }
-    });
 
-    request.clear();
-    request.timeout(10000);
+        if (!status || !status.login) {
+            return 'Устройство не авторизовано';
+        }
 
-    request.quiet(API + 'token_request' + deviceQuery(), function (result) {
-        if (!result || result.status !== 'ok' || !result.code || !result.user_code) {
-            stopAuth();
-            Lampa.Modal.close();
-            notify('Filmix не выдал код привязки. Попробуй позже.');
+        var tier = status.is_pro_plus
+            ? 'PRO+'
+            : (status.is_pro ? 'PRO' : 'FREE');
+
+        var until = status.pro_date
+            ? ' · до ' + status.pro_date
+            : '';
+
+        return status.login + ' · ' + tier + until;
+    }
+
+    function renderStatus() {
+        var value = document.querySelector(
+            '[data-name="fpp_account_status"] .settings-param__value'
+        );
+
+        if (value) {
+            value.textContent = accountStatusText();
+        }
+    }
+
+    function startAuthorization() {
+        if (!Lampa.Reguest || !Lampa.Modal) {
+            notify('В этой версии Lampa недоступен модуль авторизации');
             return;
         }
 
-        authToken = result.code;
-        authCode = result.user_code;
+        stopPolling();
 
-        modal.find('.broadcast__device').text(authCode);
+        authToken = '';
+        authCode = '';
+        deviceQuery = '';
 
-        pollTimer = setInterval(function () {
-            if (!authInProgress || !authToken) return;
+        if (!network) network = new Lampa.Reguest();
 
-            checkProfile(authToken, function (profile) {
-                if (!profile || !authInProgress) return;
+        var body = $('<div class="broadcast">' +
+            '<div class="broadcast__text">' +
+            'Откройте <b>https://filmix.ac/consoles</b> в браузере, ' +
+            'войдите в свой аккаунт и введите показанный код.' +
+            '</div>' +
+            '<div class="broadcast__device selector" ' +
+            'style="text-align:center;font-size:2em;padding:1em">' +
+            'Получаем код…</div>' +
+            '<div class="broadcast__text" style="text-align:center">' +
+            'Нажмите OK на коде, чтобы скопировать его' +
+            '</div></div>');
 
-                stopAuth();
-                Lampa.Modal.close();
+        authModal = body;
 
-                Lampa.Storage.set('filmix_token', authToken);
-                Lampa.Storage.set('filmix_status', profile);
+        Lampa.Modal.open({
+            title: 'Подключение Filmix',
+            html: body,
 
-                renderAccountStatus(body);
-
-                notify('Filmix подключён: ' + accountStatusText(profile));
-
+            onBack: function () {
+                closeAuthModal();
                 Lampa.Controller.toggle('settings_component');
-            }, true);
-        }, 10000);
-    }, function (a, c) {
-        stopAuth();
-        Lampa.Modal.close();
-        notify(request.errorDecode(a, c));
-    });
-}
+            },
 
-/* Раздел Filmix в настройках Lampa */
-function addSettingsFilmix() {
-    if (!Lampa.Settings || !Lampa.Settings.main) return;
+            onSelect: function () {
+                if (!authCode) return;
 
-    var main = Lampa.Settings.main();
+                if (Lampa.Utils && Lampa.Utils.copyTextToClipboard) {
+                    Lampa.Utils.copyTextToClipboard(
+                        authCode,
+                        function () {
+                            notify('Код скопирован');
+                        },
+                        function () {
+                            notify('Не удалось скопировать код');
+                        }
+                    );
+                } else {
+                    notify('Код: ' + authCode);
+                }
+            }
+        });
 
-    if (!main || !main.render) return;
+        network.clear();
+        network.timeout(10000);
 
-    var render = main.render();
+        network.quiet(
+            API_URL + 'token_request' + getDeviceQuery(),
 
-    if (render.find('[data-component="filmix"]').length) return;
+            function (found) {
+                if (
+                    found &&
+                    found.status === 'ok' &&
+                    found.code &&
+                    found.user_code
+                ) {
+                    authToken = found.code;
+                    authCode = found.user_code;
 
-    var folder = $('<div class="settings-folder selector" data-component="filmix"><div class="settings-folder__icon"><svg height="57" viewBox="0 0 58 57" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 20.3735V45H26.8281V34.1262H36.724V26.9806H26.8281V24.3916C26.8281 21.5955 28.9062 19.835 31.1823 19.835H39V13H26.8281C23.6615 13 20 15.49 20 20.3735Z" fill="white"/><rect x="2" y="2" width="54" height="53" rx="5" stroke="white" stroke-width="4"/></svg></div><div class="settings-folder__name">Filmix PRO+ — авторизация</div></div>');
+                    body.find('.broadcast__device').text(authCode);
 
-    var more = render.find('[data-component="more"]');
+                    stopPolling();
 
-    if (more.length) more.after(folder);
-    else render.append(folder);
+                    pollTimer = setInterval(function () {
+                        profileRequest(authToken, function () {
+                            storageSet(STORAGE.token, authToken);
 
-    if (main.update) main.update();
-}
+                            notify('Filmix успешно подключён');
 
-function bindFilmixSettings() {
-    Lampa.Settings.listener.follow('open', function (event) {
-        if (event.name !== 'filmix' || !event.body) return;
+                            closeAuthModal();
 
-        authBody = event.body;
+                            Lampa.Controller.toggle('settings_component');
+                        });
+                    }, 10000);
+                } else {
+                    notify(
+                        found && (found.message || found.error)
+                            ? (found.message || found.error)
+                            : 'Filmix не выдал код авторизации'
+                    );
 
-        event.body.find('[data-name="filmix_add"]')
-            .off('hover:enter')
-            .on('hover:enter', function () {
-                openDeviceAuth(event.body);
-            });
+                    body.find('.broadcast__device').text(
+                        'Не удалось получить код'
+                    );
+                }
+            },
 
-        renderAccountStatus(event.body);
+            function (a, c) {
+                notify(network.errorDecode(a, c));
 
-        var token = Lampa.Storage.get('filmix_token', '');
-
-        if (token) checkProfile(token, null, true);
-    });
-}
-
-function initializeFilmixAuth() {
-    if (!Lampa.Settings || !Lampa.Storage || !Lampa.Reguest || !Lampa.Template) return;
-
-    try {
-        if (Lampa.Params && Lampa.Params.select) {
-            Lampa.Params.select('filmix_token', '', '');
-        }
-    } catch (e) {
-        log('filmix_token parameter registration failed', e);
+                body.find('.broadcast__device').text(
+                    'Ошибка соединения с Filmix'
+                );
+            }
+        );
     }
 
-    Lampa.Template.add('settings_filmix',
-        '<div>' +
-            '<div class="settings-param selector" data-name="filmix_token" data-type="input" placeholder="Вставь токен Filmix">' +
-                '<div class="settings-param__name">Токен Filmix</div>' +
-                '<div class="settings-param__value"></div>' +
-                '<div class="settings-param__descr">Необязательно: можно добавить токен вручную</div>' +
-            '</div>' +
-            '<div class="settings-param selector" data-name="filmix_add" data-static="true">' +
-                '<div class="settings-param__name">Привязать устройство</div>' +
-                '<div class="settings-param__value">Получить одноразовый код</div>' +
-                '<div class="settings-param__descr">Введи код на filmix.ac/consoles</div>' +
-            '</div>' +
-        '</div>'
-    );
+    function addSettings() {
+        if (
+            settingsRegistered ||
+            !Lampa.SettingsApi ||
+            !Lampa.SettingsApi.addComponent ||
+            !Lampa.SettingsApi.addParam
+        ) {
+            return false;
+        }
 
-    addSettingsFilmix();
-    bindFilmixSettings();
+        settingsRegistered = true;
 
-    Lampa.Listener.follow('app', function (event) {
-        if (event.type === 'ready') addSettingsFilmix();
-    });
+        Lampa.SettingsApi.addComponent({
+            component: COMPONENT,
+            name: 'Filmix PRO+ · Cardify',
+            icon: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+                '<path fill="currentColor" d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm1 3v12h14V6H5zm2 2h5v8H7V8zm7 0h5v2h-5V8zm0 4h5v2h-5v-2z"/>' +
+                '</svg>'
+        });
 
-    Lampa.Storage.listener.follow('change', function (event) {
-        if (event.name === 'filmix_token') {
-            if (event.value) {
-                checkProfile(event.value, null, false);
-            } else {
-                Lampa.Storage.set('filmix_status', {});
-                if (authBody) renderAccountStatus(authBody);
+        Lampa.SettingsApi.addParam({
+            component: COMPONENT,
+            param: {
+                name: STORAGE.enabled,
+                type: 'trigger',
+                default: true
+            },
+            field: {
+                name: 'Включить Filmix PRO+'
+            },
+            onChange: function () {
+                applyTheme();
+                updateCardifyClass();
             }
+        });
+
+        Lampa.SettingsApi.addParam({
+            component: COMPONENT,
+            param: {
+                name: STORAGE.cardify,
+                type: 'trigger',
+                default: true
+            },
+            field: {
+                name: 'Оформление карточек Cardify',
+                description: 'Компактное расположение информации и рейтингов'
+            },
+            onChange: function () {
+                applyTheme();
+                updateCardifyClass();
+            }
+        });
+
+        Lampa.SettingsApi.addParam({
+            component: COMPONENT,
+            param: {
+                name: STORAGE.theme,
+                type: 'select',
+                values: 'navy_gold,graphite,black_red',
+                default: 'navy_gold'
+            },
+            field: {
+                name: 'Цветовая тема',
+                description: 'Navy Gold / Graphite / Black Red'
+            },
+            onChange: applyTheme
+        });
+
+        Lampa.SettingsApi.addParam({
+            component: COMPONENT,
+            param: {
+                name: 'fpp_auth_action',
+                type: 'trigger',
+                default: false
+            },
+            field: {
+                name: 'Подключить / переподключить Filmix',
+                description: 'Получить одноразовый код для привязки устройства'
+            },
+            onChange: function (value) {
+                if (value) {
+                    startAuthorization();
+                    storageSet('fpp_auth_action', false);
+                }
+            }
+        });
+
+        Lampa.SettingsApi.addParam({
+            component: COMPONENT,
+            param: {
+                name: 'fpp_status_refresh',
+                type: 'trigger',
+                default: false
+            },
+            field: {
+                name: 'Обновить статус аккаунта'
+            },
+            onChange: function (value) {
+                if (value) {
+                    var token = storageGet(STORAGE.token, '');
+
+                    if (token) {
+                        profileRequest(token);
+                    } else {
+                        notify('Сначала подключите Filmix');
+                    }
+
+                    storageSet('fpp_status_refresh', false);
+                }
+            }
+        });
+
+        if (
+            Lampa.Settings &&
+            Lampa.Settings.listener &&
+            Lampa.Settings.listener.follow
+        ) {
+            Lampa.Settings.listener.follow('open', function (e) {
+                if (e.name !== COMPONENT || !e.body) return;
+
+                e.body.find('[data-name="fpp_account_status"]').remove();
+
+                var statusField = $(
+                    '<div class="settings-param" data-name="fpp_account_status">' +
+                    '<div class="settings-param__name">Статус аккаунта Filmix</div>' +
+                    '<div class="settings-param__value"></div>' +
+                    '</div>'
+                );
+
+                e.body.append(statusField);
+
+                renderStatus();
+            });
         }
-    });
 
-    var savedToken = Lampa.Storage.get('filmix_token', '');
+        return true;
+    }
 
-    if (savedToken) checkProfile(savedToken, null, true);
+    function legacySettingsFallback() {
+        if (!Lampa.Settings || !Lampa.Settings.main) return;
 
-    log('Native Filmix settings component registered');
-}
+        var main = Lampa.Settings.main();
 
-function runChecks() {
-    var checks = {
-        Lampa: !!window.Lampa,
-        appReady: !!window.appready,
-        settings: !!(Lampa.Settings && Lampa.Settings.main),
-        settingsListener: !!(Lampa.Settings && Lampa.Settings.listener),
-        template: !!(Lampa.Template && Lampa.Template.add),
-        storage: !!(Lampa.Storage && Lampa.Storage.get && Lampa.Storage.set),
-        filmixFolder: !!document.querySelector('[data-component="filmix"]'),
-        themeButton: !!document.getElementById(BUTTON_ID)
-    };
+        if (!main || !main.render) return;
 
-    window.filmix_pro_plus_status = {
-        version: VERSION,
-        checks: checks
-    };
+        var root = main.render();
 
-    Object.keys(checks).forEach(function (key) {
-        log(key + ': ' + (checks[key] ? 'OK' : 'NOT FOUND'));
-    });
-}
-
-function initialize() {
-    if (initialized || !window.Lampa || !document.body) return;
-
-    initialized = true;
-    enabled = readTheme();
-
-    refresh();
-    startObserver();
-    initializeFilmixAuth();
-
-    window.filmix_pro_plus = {
-        version: VERSION,
-        toggle: toggleTheme,
-        refresh: refresh,
-        status: function () {
-            runChecks();
-            return window.filmix_pro_plus_status;
+        if (root.find('[data-component="' + COMPONENT + '"]').length) {
+            return;
         }
-    };
 
-    runChecks();
-    log('Plugin initialized');
-}
+        var folder = $(
+            '<div class="settings-folder selector" data-component="' +
+            COMPONENT +
+            '">' +
+            '<div class="settings-folder__icon">✦</div>' +
+            '<div class="settings-folder__name">Filmix PRO+ · Cardify</div>' +
+            '</div>'
+        );
 
-function bootstrap() {
-    var attempts = 0;
+        var more = root.find('[data-component="more"]');
 
-    var timer = setInterval(function () {
-        attempts++;
-
-        if (window.Lampa && window.appready && document.body) {
-            clearInterval(timer);
-            initialize();
-        } else if (attempts >= 100) {
-            clearInterval(timer);
-            log('Timeout waiting for Lampa ready');
+        if (more.length) {
+            more.after(folder);
+        } else {
+            root.append(folder);
         }
-    }, 300);
-}
 
-log('Script loaded');
-bootstrap();
+        main.update();
 
+        Lampa.Settings.listener.follow('open', function (e) {
+            if (e.name !== COMPONENT) return;
+
+            var html = $(
+                '<div class="settings">' +
+                '<div class="settings-param selector" data-name="fpp_auth">' +
+                '<div class="settings-param__name">Подключить / переподключить Filmix</div>' +
+                '</div>' +
+                '<div class="settings-param selector" data-name="fpp_refresh">' +
+                '<div class="settings-param__name">Обновить статус аккаунта</div>' +
+                '</div>' +
+                '<div class="settings-param">' +
+                '<div class="settings-param__name">Статус аккаунта</div>' +
+                '<div class="settings-param__value">' + accountStatusText() + '</div>' +
+                '</div>' +
+                '<div class="settings-param selector" data-name="fpp_enable">' +
+                '<div class="settings-param__name">Включить / выключить оформление</div>' +
+                '</div>' +
+                '</div>'
+            );
+
+            e.body.empty().append(html);
+
+            html.find('[data-name="fpp_auth"]').on(
+                'hover:enter',
+                startAuthorization
+            );
+
+            html.find('[data-name="fpp_refresh"]').on(
+                'hover:enter',
+                function () {
+                    var token = storageGet(STORAGE.token, '');
+
+                    if (token) profileRequest(token);
+                    else notify('Сначала подключите Filmix');
+                }
+            );
+
+            html.find('[data-name="fpp_enable"]').on(
+                'hover:enter',
+                function () {
+                    storageSet(STORAGE.enabled, !isEnabled());
+                    applyTheme();
+                    updateCardifyClass();
+                }
+            );
+        });
+    }
+
+    function initialize() {
+        if (initialized || !window.Lampa || !Lampa.Storage) return;
+
+        initialized = true;
+
+        if (storageGet(STORAGE.enabled, null) === null) {
+            storageSet(STORAGE.enabled, true);
+        }
+
+        if (storageGet(STORAGE.cardify, null) === null) {
+            storageSet(STORAGE.cardify, true);
+        }
+
+        if (storageGet(STORAGE.theme, null) === null) {
+            storageSet(STORAGE.theme, 'navy_gold');
+        }
+
+        applyTheme();
+        addFullListener();
+
+        if (!addSettings()) {
+            legacySettingsFallback();
+        }
+
+        updateCardifyClass();
+
+        var token = storageGet(STORAGE.token, '');
+
+        if (token) {
+            profileRequest(token);
+        }
+
+        log('Initialized');
+    }
+
+    if (window.appready) {
+        initialize();
+    } else if (Lampa.Listener && Lampa.Listener.follow) {
+        Lampa.Listener.follow('app', function (e) {
+            if (e.type === 'ready') initialize();
+        });
+    } else {
+        var attempts = 0;
+
+        var wait = setInterval(function () {
+            attempts++;
+
+            if (
+                window.Lampa &&
+                Lampa.Storage &&
+                (window.appready || attempts > 30)
+            ) {
+                clearInterval(wait);
+                initialize();
+            }
+
+            if (attempts > 100) clearInterval(wait);
+        }, 300);
+    }
 })();
