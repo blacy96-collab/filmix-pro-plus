@@ -2,85 +2,61 @@
     'use strict';
 
     var ID = 'filmix-gold-switch';
-    var STYLE_ID = 'filmix-gold-switch-css';
-    var STORAGE = 'filmix_smart_tv_enabled';
+    var STYLE = 'filmix-gold-switch-style';
+    var KEY = 'filmix_smart_tv_enabled';
 
-    if (window.__filmixGoldSwitchLoaded) return;
-    window.__filmixGoldSwitchLoaded = true;
+    if (window.__filmixGoldSwitchInstalled) return;
+    window.__filmixGoldSwitchInstalled = true;
 
     var enabled = true;
-    var observer = null;
-    var timer = null;
 
     var css = `
-    #${ID} {
-        width: 2.65em !important;
-        height: 2.65em !important;
-        min-width: 2.65em !important;
-        min-height: 2.65em !important;
-        margin: 0 .35em !important;
-        padding: 0 !important;
+    #filmix-gold-switch {
+        width: 2.6em;
+        height: 2.6em;
+        min-width: 2.6em;
+        min-height: 2.6em;
         display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        box-sizing: border-box !important;
-        border-radius: 50% !important;
-        border: 1px solid rgba(255,255,255,.15) !important;
-        background: #242629 !important;
-        color: #999 !important;
-        position: relative !important;
-        z-index: 999999 !important;
-        cursor: pointer !important;
-        transition: all .3s ease !important;
+        align-items: center;
+        justify-content: center;
+        margin: 0 .35em;
+        padding: 0;
+        border-radius: 50%;
+        box-sizing: border-box;
+        background: #242629;
+        color: #999;
+        border: 1px solid #555;
+        cursor: pointer;
+        z-index: 999999;
     }
 
-    #${ID} svg {
-        width: 1.5em !important;
-        height: 1.5em !important;
-        display: block !important;
-        fill: currentColor !important;
+    #filmix-gold-switch svg {
+        width: 1.5em;
+        height: 1.5em;
+        fill: currentColor;
     }
 
-    #${ID}.gold-on {
-        color: #ffe5a0 !important;
-        border-color: #e9c36b !important;
-        background: radial-gradient(
-            circle, #70572a 0%, #302719 65%, #202124 100%
-        ) !important;
-        box-shadow:
-            0 0 8px #e9c36b,
-            0 0 18px rgba(238,190,85,.85),
-            0 0 32px rgba(238,190,85,.5),
-            inset 0 0 10px rgba(255,224,145,.35) !important;
-        animation: filmixGoldGlow 2s ease-in-out infinite !important;
+    #filmix-gold-switch.gold-on {
+        color: #ffe6a0;
+        background: radial-gradient(circle,#70572a,#252018);
+        border-color: #e9c36b;
+        box-shadow: 0 0 9px #e9c36b,
+                    0 0 22px rgba(238,190,85,.9),
+                    0 0 36px rgba(238,190,85,.5);
+        animation: filmixGoldPulse 2s infinite ease-in-out;
     }
 
-    #${ID}.gold-off {
-        color: #888 !important;
-        border-color: rgba(255,255,255,.12) !important;
-        box-shadow: none !important;
-        animation: none !important;
+    #filmix-gold-switch.gold-off {
+        color: #888;
+        box-shadow: none;
+        animation: none;
     }
 
-    #${ID}.focus,
-    #${ID}:focus {
-        outline: 2px solid #ffe5a0 !important;
-        outline-offset: 3px !important;
-    }
-
-    @keyframes filmixGoldGlow {
-        0%, 100% {
-            filter: brightness(1);
-            box-shadow: 0 0 7px #d8b66b,
-                0 0 15px rgba(238,190,85,.6),
-                inset 0 0 8px rgba(255,224,145,.2);
-        }
+    @keyframes filmixGoldPulse {
         50% {
-            filter: brightness(1.4);
-            box-shadow: 0 0 13px #ffe5a0,
-                0 0 27px rgba(238,190,85,1),
-                0 0 40px rgba(238,190,85,.55),
-                inset 0 0 13px rgba(255,224,145,.45);
+            filter: brightness(1.5);
+            box-shadow: 0 0 14px #ffe6a0,
+                        0 0 30px #e9c36b;
         }
     }
 
@@ -91,117 +67,54 @@
 
     body.ft-theme-on .head,
     body.ft-theme-on .head__body {
-        background: rgba(16,17,19,.97) !important;
-    }
-
-    body.ft-theme-on .head__title,
-    body.ft-theme-on .category__title,
-    body.ft-theme-on .title,
-    body.ft-theme-on .full-start__title {
-        color: #f2d99b !important;
-    }
-
-    body.ft-theme-on .selector.focus,
-    body.ft-theme-on button.focus,
-    body.ft-theme-on .button.focus,
-    body.ft-theme-on .menu__item.focus {
-        border-color: #e9c36b !important;
-        box-shadow: 0 0 15px rgba(238,190,85,.35) !important;
+        background: #101113 !important;
     }
     `;
 
     function readSetting() {
         try {
             if (window.Lampa && Lampa.Storage) {
-                return Lampa.Storage.get(STORAGE, true) !== false;
+                return Lampa.Storage.get(KEY, true) !== false;
             }
         } catch (e) {}
+
         try {
-            return localStorage.getItem(STORAGE) !== 'false';
+            return localStorage.getItem(KEY) !== 'false';
         } catch (e) {}
+
         return true;
     }
 
     function saveSetting() {
         try {
             if (window.Lampa && Lampa.Storage) {
-                Lampa.Storage.set(STORAGE, enabled);
+                Lampa.Storage.set(KEY, enabled);
             }
         } catch (e) {}
+
         try {
-            localStorage.setItem(STORAGE, enabled ? 'true' : 'false');
+            localStorage.setItem(KEY, enabled ? 'true' : 'false');
         } catch (e) {}
     }
 
     function applyStyle() {
         if (!document.head || !document.body) return;
 
-        var style = document.getElementById(STYLE_ID);
+        var style = document.getElementById(STYLE);
 
         if (!style) {
             style = document.createElement('style');
-            style.id = STYLE_ID;
+            style.id = STYLE;
             document.head.appendChild(style);
         }
 
-        if (style.textContent !== css) {
-            style.textContent = css;
-        }
-
+        style.textContent = css;
         document.body.classList.toggle('ft-theme-on', enabled);
-    }
-
-    function findBell() {
-        var header = document.querySelector('.head');
-
-        if (!header) return null;
-
-        var actions = header.querySelectorAll(
-            '.head__action, button, [role="button"], .selector'
-        );
-
-        for (var i = 0; i < actions.length; i++) {
-            var el = actions[i];
-
-            if (el.id === ID) continue;
-
-            var description = [
-                el.className,
-                el.getAttribute('title'),
-                el.getAttribute('aria-label'),
-                el.getAttribute('data-action'),
-                el.innerHTML
-            ].join(' ').toLowerCase();
-
-            if (/bell|notice|notif|notification|уведом|колокол/.test(description)) {
-                return el;
-            }
-
-            var svg = el.querySelector('svg');
-
-            if (svg) {
-                var svgDescription = [
-                    svg.getAttribute('class'),
-                    svg.innerHTML
-                ].join(' ').toLowerCase();
-
-                if (/bell|notice|notif/.test(svgDescription)) {
-                    return el;
-                }
-            }
-        }
-
-        return null;
     }
 
     function updateButton(button) {
         button.classList.toggle('gold-on', enabled);
         button.classList.toggle('gold-off', !enabled);
-
-        button.setAttribute(
-            'aria-label',
-            enabled ? 'Золотой стиль включён' : 'Золотой стиль выключен'
-        );
     }
 
     function toggle() {
@@ -223,24 +136,35 @@
         } catch (e) {}
     }
 
-    function installButton() {
-        var existing = document.getElementById(ID);
+    function findHeaderActions() {
+        var selectors = [
+            '.head__actions',
+            '.head__actions-list',
+            '.head__right',
+            '.head__body .head__actions',
+            '.head'
+        ];
 
-        if (existing) {
-            updateButton(existing);
-            return;
+        for (var i = 0; i < selectors.length; i++) {
+            var element = document.querySelector(selectors[i]);
+            if (element) return element;
         }
 
-        var bell = findBell();
+        return null;
+    }
 
-        if (!bell || !bell.parentNode) return;
+    function install() {
+        if (document.getElementById(ID)) return;
+
+        var actions = findHeaderActions();
+        if (!actions) return;
 
         var button = document.createElement('div');
-
         button.id = ID;
-        button.className = 'selector';
+        button.className = 'selector gold-on';
         button.setAttribute('role', 'button');
         button.setAttribute('tabindex', '0');
+        button.setAttribute('title', 'Filmix PRO+ — переключить оформление');
 
         button.innerHTML =
             '<svg viewBox="0 0 24 24" aria-hidden="true">' +
@@ -260,50 +184,37 @@
             }
         });
 
-        bell.parentNode.insertBefore(button, bell);
-        updateButton(button);
-    }
+        var bell = actions.querySelector(
+            '.head__action--notice, [data-action="notice"], [aria-label*="уведом"]'
+        );
 
-    function refresh() {
-        applyStyle();
-        installButton();
+        if (bell && bell.parentNode === actions) {
+            actions.insertBefore(button, bell);
+        } else {
+            actions.appendChild(button);
+        }
+
+        updateButton(button);
     }
 
     function start() {
         enabled = readSetting();
-        refresh();
+        applyStyle();
+        install();
 
-        if (!observer && document.documentElement) {
-            observer = new MutationObserver(function () {
-                if (!document.getElementById(STYLE_ID)) {
-                    applyStyle();
-                }
-
-                if (enabled &&
-                    !document.body.classList.contains('ft-theme-on')) {
-                    document.body.classList.add('ft-theme-on');
-                }
-
-                if (!document.getElementById(ID)) {
-                    installButton();
-                }
+        if (!window.__filmixGoldObserver && document.documentElement) {
+            window.__filmixGoldObserver = new MutationObserver(function () {
+                applyStyle();
+                install();
             });
 
-            observer.observe(document.documentElement, {
+            window.__filmixGoldObserver.observe(document.documentElement, {
                 childList: true,
                 subtree: true
             });
         }
 
-        if (timer) clearInterval(timer);
-
-        timer = setInterval(function () {
-            if (!document.getElementById(ID)) {
-                installButton();
-            }
-        }, 2000);
-
-        console.log('[Filmix PRO+] Gold switch initialized');
+        console.log('[Filmix PRO+] Gold switch started');
     }
 
     if (document.readyState === 'loading') {
@@ -314,9 +225,7 @@
 
     if (window.Lampa && Lampa.Listener) {
         Lampa.Listener.follow('app', function (event) {
-            if (event && event.type === 'ready') {
-                start();
-            }
+            if (event && event.type === 'ready') start();
         });
     }
 })();
