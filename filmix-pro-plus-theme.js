@@ -79,31 +79,47 @@ body.${CLASS_NAME} .settings {
     color: var(--fp-text) !important;
 }
 
+/* Кнопка Filmix — размер под соседние значки */
 #${BUTTON_ID} {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    margin: 0 6px;
-    border-radius: 50%;
-    color: var(--fp-gold-light);
-    background: #202630;
-    border: 1px solid var(--fp-gold);
-    box-sizing: border-box;
-    cursor: pointer;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    max-width: 34px !important;
+    max-height: 34px !important;
+    padding: 0 !important;
+    margin: 0 4px !important;
+    border-radius: 50% !important;
+    color: var(--fp-gold-light) !important;
+    background: #202630 !important;
+    border: 1px solid var(--fp-gold) !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    overflow: hidden !important;
 }
 
 #${BUTTON_ID} svg {
-    width: 22px;
-    height: 22px;
-    fill: currentColor;
+    display: block !important;
+    width: 17px !important;
+    height: 17px !important;
+    min-width: 17px !important;
+    min-height: 17px !important;
+    fill: currentColor !important;
 }
 
 #${BUTTON_ID}.off {
-    color: #9299a2;
-    border-color: #555d67;
+    color: #9299a2 !important;
+    border-color: #555d67 !important;
+    box-shadow: none !important;
+}
+
+#${BUTTON_ID}:focus {
+    outline: 2px solid var(--fp-gold-light) !important;
+    outline-offset: 2px !important;
 }
 
 @media (max-width: 700px) {
@@ -220,6 +236,7 @@ body.${CLASS_NAME} .settings {
         button.id = BUTTON_ID;
         button.type = 'button';
         button.className = 'selector';
+
         button.innerHTML =
             '<svg viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M12 2l2.5 6.2L21 10l-6.5 2.1L12 18l-2.5-5.9L3 10l6.5-1.8z"/>' +
@@ -231,7 +248,18 @@ body.${CLASS_NAME} .settings {
             toggleTheme();
         });
 
-        header.appendChild(button);
+        var moreButton = header.querySelector(
+            '.head__action--more, ' +
+            '[data-action="more"], ' +
+            '.head__action--menu'
+        );
+
+        if (moreButton) {
+            header.insertBefore(button, moreButton);
+        } else {
+            header.appendChild(button);
+        }
+
         updateButton();
     }
 
@@ -269,7 +297,7 @@ body.${CLASS_NAME} .settings {
 
         console.log('[Filmix Theme] Started');
         console.log('[Filmix Theme] Enabled:', enabled);
-        console.log('[Filmix Theme] Version: 1.1.0');
+        console.log('[Filmix Theme] Version: 1.2.0');
     }
 
     if (document.readyState === 'loading') {
