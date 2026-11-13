@@ -23,6 +23,8 @@
     --fp-text: #f4f1e9;
 }
 
+/* ОСНОВНОЕ ОФОРМЛЕНИЕ */
+
 body.${CLASS_NAME} {
     background: var(--fp-bg) !important;
     color: var(--fp-text) !important;
@@ -79,59 +81,65 @@ body.${CLASS_NAME} .settings {
     color: var(--fp-text) !important;
 }
 
-/* Компактная кнопка Filmix — под размер соседних значков */
+/* КНОПКА FILMIX — РАЗМЕР СОСЕДНИХ ИКОНОК */
+
 #${BUTTON_ID} {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
 
     box-sizing: border-box !important;
-    flex: 0 0 26px !important;
 
-    width: 26px !important;
-    height: 26px !important;
-    min-width: 26px !important;
-    min-height: 26px !important;
-    max-width: 26px !important;
-    max-height: 26px !important;
+    width: 19px !important;
+    height: 19px !important;
+    min-width: 19px !important;
+    min-height: 19px !important;
+    max-width: 19px !important;
+    max-height: 19px !important;
+
+    flex: 0 0 19px !important;
 
     padding: 0 !important;
     margin: 0 4px !important;
 
     border-radius: 50% !important;
-    border: 1px solid var(--fp-gold) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
 
-    color: var(--fp-gold-light) !important;
-    background: #202630 !important;
+    background: #202127 !important;
+    color: #e7c77f !important;
 
-    overflow: hidden !important;
     box-shadow: none !important;
-    cursor: pointer !important;
+    overflow: hidden !important;
+    transform: none !important;
 }
 
 #${BUTTON_ID} svg {
     display: block !important;
-    flex: 0 0 14px !important;
 
-    width: 14px !important;
-    height: 14px !important;
-    min-width: 14px !important;
-    min-height: 14px !important;
-    max-width: 14px !important;
-    max-height: 14px !important;
+    width: 10px !important;
+    height: 10px !important;
+    min-width: 10px !important;
+    min-height: 10px !important;
+    max-width: 10px !important;
+    max-height: 10px !important;
+
+    flex: 0 0 10px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
 
     fill: currentColor !important;
 }
 
 #${BUTTON_ID}.off {
     color: #9299a2 !important;
-    border-color: #555d67 !important;
-    box-shadow: none !important;
+    background: #202127 !important;
+    border-color: rgba(255,255,255,.12) !important;
 }
 
 #${BUTTON_ID}:focus {
-    outline: 2px solid var(--fp-gold-light) !important;
-    outline-offset: 2px !important;
+    outline: 1px solid var(--fp-gold) !important;
+    outline-offset: 1px !important;
 }
 
 @media (max-width: 700px) {
@@ -143,8 +151,11 @@ body.${CLASS_NAME} .settings {
 
     function readSetting() {
         try {
-            if (window.Lampa && Lampa.Storage &&
-                typeof Lampa.Storage.get === 'function') {
+            if (
+                window.Lampa &&
+                Lampa.Storage &&
+                typeof Lampa.Storage.get === 'function'
+            ) {
                 return Lampa.Storage.get(STORAGE_KEY, true) !== false;
             }
         } catch (e) {}
@@ -158,8 +169,11 @@ body.${CLASS_NAME} .settings {
 
     function saveSetting() {
         try {
-            if (window.Lampa && Lampa.Storage &&
-                typeof Lampa.Storage.set === 'function') {
+            if (
+                window.Lampa &&
+                Lampa.Storage &&
+                typeof Lampa.Storage.set === 'function'
+            ) {
                 Lampa.Storage.set(STORAGE_KEY, enabled);
             }
         } catch (e) {}
@@ -192,8 +206,11 @@ body.${CLASS_NAME} .settings {
 
     function showMessage(message) {
         try {
-            if (window.Lampa && Lampa.Noty &&
-                typeof Lampa.Noty.show === 'function') {
+            if (
+                window.Lampa &&
+                Lampa.Noty &&
+                typeof Lampa.Noty.show === 'function'
+            ) {
                 Lampa.Noty.show(message);
             }
         } catch (e) {
@@ -206,14 +223,18 @@ body.${CLASS_NAME} .settings {
         if (!button) return;
 
         button.classList.toggle('off', !enabled);
+
         button.setAttribute(
             'aria-label',
-            enabled ? 'Выключить оформление' : 'Включить оформление'
+            enabled
+                ? 'Выключить оформление'
+                : 'Включить оформление'
         );
     }
 
     function toggleTheme() {
         enabled = !enabled;
+
         saveSetting();
         installStyle();
         updateButton();
@@ -247,7 +268,7 @@ body.${CLASS_NAME} .settings {
         button = document.createElement('button');
         button.id = BUTTON_ID;
         button.type = 'button';
-        button.className = 'selector';
+        button.className = 'selector filmix-theme-button';
 
         button.innerHTML =
             '<svg viewBox="0 0 24 24" aria-hidden="true">' +
@@ -281,12 +302,21 @@ body.${CLASS_NAME} .settings {
     }
 
     function startObserver() {
-        if (observer || !window.MutationObserver ||
-            !document.documentElement) return;
+        if (
+            observer ||
+            !window.MutationObserver ||
+            !document.documentElement
+        ) {
+            return;
+        }
 
         observer = new MutationObserver(function () {
-            var styleMissing = !document.getElementById(STYLE_ID);
-            var buttonMissing = !document.getElementById(BUTTON_ID);
+            var styleMissing =
+                !document.getElementById(STYLE_ID);
+
+            var buttonMissing =
+                !document.getElementById(BUTTON_ID);
+
             var classMissing =
                 document.body &&
                 document.body.classList.contains(CLASS_NAME) !== enabled;
@@ -304,12 +334,13 @@ body.${CLASS_NAME} .settings {
 
     function start() {
         enabled = readSetting();
+
         refresh();
         startObserver();
 
         console.log('[Filmix Theme] Started');
         console.log('[Filmix Theme] Enabled:', enabled);
-        console.log('[Filmix Theme] Version: 1.3.0');
+        console.log('[Filmix Theme] Version: 1.4.0');
     }
 
     if (document.readyState === 'loading') {
