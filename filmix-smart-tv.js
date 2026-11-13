@@ -4,12 +4,22 @@
 
     var PLUGIN = 'filmix_smart_tv';
     var STYLE = 'filmix-smart-tv-real-style';
+    var BODY = 'filmix-smart-tv';
 
     if (window.filmixSmartTVRealLoaded) return;
     window.filmixSmartTVRealLoaded = true;
 
     var css = `
-    .filmix-tv {
+    /* ОСНОВНОЙ ИНТЕРФЕЙС */
+    body.${BODY} {
+        background: #101113 !important;
+        color: #f4f4f4 !important;
+        --ft-orange: #ed762e;
+        --ft-panel: #1b1d20;
+        --ft-muted: #a4a5a7;
+    }
+
+    body.${BODY} .filmix-tv {
         background: #101113;
         color: #f4f4f4;
         width: 100%;
@@ -18,7 +28,8 @@
         box-sizing: border-box;
     }
 
-    .filmix-tv__hero {
+    /* ГЛАВНЫЙ БАННЕР */
+    body.${BODY} .filmix-tv__hero {
         display: flex;
         flex-direction: column;
         position: relative;
@@ -26,39 +37,31 @@
         border-radius: 1em;
         background: #191b1e;
         margin-bottom: 2.5em;
-        isolation: isolate;
     }
 
-    .filmix-tv__hero-bg {
-        position: relative;
+    body.${BODY} .filmix-tv__hero-bg {
         display: block;
         width: 100%;
         height: 23em;
         object-fit: cover;
         object-position: center 30%;
         background: #202226;
-        z-index: 0;
     }
 
-    .filmix-tv__hero-content {
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        max-width: none;
-        box-sizing: border-box;
+    body.${BODY} .filmix-tv__hero-content {
         padding: 2em 2.3em;
-        background: linear-gradient(180deg, #242629, #151619);
+        background: linear-gradient(180deg,#242629,#151619);
+        box-sizing: border-box;
     }
 
-    .filmix-tv__eyebrow {
-        color: #ed762e;
-        font-size: 1em;
+    body.${BODY} .filmix-tv__eyebrow {
+        color: var(--ft-orange);
         font-weight: 700;
         letter-spacing: .15em;
         margin-bottom: .8em;
     }
 
-    .filmix-tv__hero-title {
+    body.${BODY} .filmix-tv__hero-title {
         color: #fff;
         font-size: 3em;
         font-weight: 700;
@@ -66,13 +69,13 @@
         margin-bottom: .4em;
     }
 
-    .filmix-tv__hero-meta {
+    body.${BODY} .filmix-tv__hero-meta {
         color: #e8b18e;
         font-size: 1.1em;
         margin-bottom: 1em;
     }
 
-    .filmix-tv__hero-description {
+    body.${BODY} .filmix-tv__hero-description {
         color: #d0d0d0;
         font-size: 1.05em;
         line-height: 1.5;
@@ -84,37 +87,13 @@
         overflow: hidden;
     }
 
-    .filmix-tv__actions {
-        display: flex;
-        gap: 1em;
-        flex-wrap: wrap;
-    }
-
-    .filmix-tv__action {
-        background: #ed762e;
-        color: #fff;
-        border: 2px solid transparent;
-        border-radius: .55em;
-        padding: .85em 1.5em;
-        font-weight: 700;
-    }
-
-    .filmix-tv__action.secondary {
-        background: #292b2f;
-        border-color: #666;
-    }
-
-    .filmix-tv__action.focus {
-        border-color: #fff;
-        box-shadow: 0 0 15px rgba(237,118,46,.4);
-    }
-
-    .filmix-tv__section {
+    /* РЯДЫ КАТАЛОГА */
+    body.${BODY} .filmix-tv__section {
         margin-bottom: 2.5em;
         width: 100%;
     }
 
-    .filmix-tv__section-title {
+    body.${BODY} .filmix-tv__section-title {
         font-size: 1.7em;
         font-weight: 650;
         color: #fff;
@@ -123,7 +102,7 @@
         border-bottom: 1px solid rgba(255,255,255,.12);
     }
 
-    .filmix-tv__row {
+    body.${BODY} .filmix-tv__row {
         display: flex;
         flex-direction: row;
         gap: 1em;
@@ -132,7 +111,7 @@
         padding: .5em .3em 1em;
     }
 
-    .filmix-tv__card {
+    body.${BODY} .filmix-tv__card {
         flex: 0 0 13em;
         width: 13em;
         min-width: 0;
@@ -144,15 +123,7 @@
         overflow: hidden;
     }
 
-    .filmix-tv__card.focus {
-        border-color: #ed762e;
-        background: #292a2c;
-        box-shadow: 0 0 20px rgba(237,118,46,.25);
-        transform: scale(1.035);
-        z-index: 3;
-    }
-
-    .filmix-tv__poster {
+    body.${BODY} .filmix-tv__poster {
         width: 100%;
         aspect-ratio: 2 / 3;
         height: auto;
@@ -162,7 +133,7 @@
         display: block;
     }
 
-    .filmix-tv__card-title {
+    body.${BODY} .filmix-tv__card-title {
         color: #f5f5f5;
         font-size: 1.05em;
         line-height: 1.3;
@@ -171,24 +142,161 @@
         min-height: 2.6em;
     }
 
-    .filmix-tv__card-meta {
+    body.${BODY} .filmix-tv__card-meta {
         color: #a9aaad;
         font-size: .9em;
         margin-top: .35em;
     }
 
-    .filmix-tv__rating {
+    body.${BODY} .filmix-tv__rating {
         color: #ffb17f;
     }
 
-    .filmix-tv__status,
-    .filmix-tv__error {
+    /* ВСЕ КНОПКИ И ИНТЕРАКТИВНЫЕ ЭЛЕМЕНТЫ */
+    body.${BODY} .selector,
+    body.${BODY} button,
+    body.${BODY} .button,
+    body.${BODY} .menu__item,
+    body.${BODY} .head__action,
+    body.${BODY} .full-start__button,
+    body.${BODY} .modal__button,
+    body.${BODY} .selectbox__item,
+    body.${BODY} .settings-param,
+    body.${BODY} .filmix-tv__action {
+        transition:
+            background-color .18s ease,
+            color .18s ease,
+            border-color .18s ease,
+            box-shadow .18s ease !important;
+        box-sizing: border-box;
+    }
+
+    /* ОБЫЧНОЕ СОСТОЯНИЕ */
+    body.${BODY} .menu__item,
+    body.${BODY} .head__action,
+    body.${BODY} .full-start__button,
+    body.${BODY} .modal__button,
+    body.${BODY} .selectbox__item,
+    body.${BODY} .settings-param {
+        border-color: rgba(237,118,46,.25) !important;
+    }
+
+    /* АКТИВНАЯ КНОПКА */
+    body.${BODY} .selector.focus,
+    body.${BODY} button.focus,
+    body.${BODY} .button.focus,
+    body.${BODY} .menu__item.focus,
+    body.${BODY} .head__action.focus,
+    body.${BODY} .full-start__button.focus,
+    body.${BODY} .modal__button.focus,
+    body.${BODY} .selectbox__item.focus,
+    body.${BODY} .settings-param.focus,
+    body.${BODY} .filmix-tv__action.focus {
+        background: #ed762e !important;
+        color: #ffffff !important;
+        border: 2px solid #ffbd91 !important;
+        box-shadow: 0 0 18px rgba(237,118,46,.4) !important;
+        outline: none !important;
+    }
+
+    /* КАРТОЧКА В ФОКУСЕ */
+    body.${BODY} .filmix-tv__card.focus {
+        border: 2px solid #ffbd91 !important;
+        background: #292a2c !important;
+        box-shadow: 0 0 20px rgba(237,118,46,.35) !important;
+        transform: scale(1.035);
+        z-index: 3;
+    }
+
+    /* КНОПКИ БАННЕРА */
+    body.${BODY} .filmix-tv__actions {
+        display: flex;
+        gap: 1em;
+        flex-wrap: wrap;
+    }
+
+    body.${BODY} .filmix-tv__action {
+        background: #ed762e;
+        color: #fff;
+        border: 2px solid transparent;
+        border-radius: .55em;
+        padding: .85em 1.5em;
+        font-weight: 700;
+    }
+
+    body.${BODY} .filmix-tv__action.secondary {
+        background: #292b2f;
+        border-color: #666;
+    }
+
+    /* МЕНЮ */
+    body.${BODY} .menu {
+        background: #191b1e !important;
+        border-right: 1px solid #303236 !important;
+    }
+
+    body.${BODY} .menu__item {
+        border-radius: .55em !important;
+    }
+
+    body.${BODY} .menu__item.focus {
+        background: #30251f !important;
+        color: #ffb17f !important;
+        border-left: 3px solid #ed762e !important;
+    }
+
+    /* СТРАНИЦА ФИЛЬМА */
+    body.${BODY} .full-start__body {
+        background: #191b1e !important;
+        border: 1px solid rgba(255,255,255,.08) !important;
+        border-radius: 1em !important;
+    }
+
+    body.${BODY} .full-start__title {
+        color: #fff !important;
+    }
+
+    body.${BODY} .full-start__button {
+        background: #202226 !important;
+        color: #f5f5f5 !important;
+        border-radius: .65em !important;
+    }
+
+    body.${BODY} .full-start__button.focus {
+        background: #ed762e !important;
+        color: #fff !important;
+    }
+
+    /* ОКНА, НАСТРОЙКИ, ПОИСК */
+    body.${BODY} .modal,
+    body.${BODY} .modal__content,
+    body.${BODY} .selectbox,
+    body.${BODY} .settings {
+        background-color: #191b1e !important;
+        color: #f4f4f4 !important;
+    }
+
+    body.${BODY} input,
+    body.${BODY} textarea {
+        background: #202226 !important;
+        color: #fff !important;
+        border: 1px solid #494b4e !important;
+        border-radius: .5em !important;
+    }
+
+    body.${BODY} input:focus,
+    body.${BODY} textarea:focus {
+        border-color: #ed762e !important;
+    }
+
+    body.${BODY} .filmix-tv__status,
+    body.${BODY} .filmix-tv__error {
         padding: 2em;
         color: #d0d0d0;
     }
 
-    @media screen and (min-width: 1500px) {
-        .filmix-tv__card {
+    @media screen and (min-width:1500px) {
+        body.${BODY} .filmix-tv__card {
             flex-basis: calc((100vw - 23em) / 6);
             width: calc((100vw - 23em) / 6);
         }
@@ -196,6 +304,55 @@
     `;
 
     var imageBase = 'https://image.tmdb.org/t/p/';
+    var observer = null;
+    var styleObserver = null;
+
+    function applyStyle() {
+        if (!document.head || !document.body) return;
+
+        document.body.classList.add(BODY);
+
+        var style = document.getElementById(STYLE);
+
+        if (!style) {
+            style = document.createElement('style');
+            style.id = STYLE;
+            document.head.appendChild(style);
+        }
+
+        if (style.textContent !== css) {
+            style.textContent = css;
+        }
+    }
+
+    function watchStyle() {
+        if (observer || !document.body) return;
+
+        observer = new MutationObserver(function () {
+            if (!document.body.classList.contains(BODY)) {
+                document.body.classList.add(BODY);
+            }
+
+            if (!document.getElementById(STYLE)) {
+                applyStyle();
+            }
+        });
+
+        observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+
+        styleObserver = new MutationObserver(function () {
+            if (!document.getElementById(STYLE)) {
+                applyStyle();
+            }
+        });
+
+        styleObserver.observe(document.head, {
+            childList: true
+        });
+    }
 
     function safe(value) {
         return String(value || '').replace(/[&<>"']/g, function (c) {
@@ -262,6 +419,7 @@
     }
 
     function SmartTV() {
+        var self = this;
         var root = $('<div class="filmix-tv"></div>');
 
         var scroll = new Lampa.Scroll({
@@ -281,7 +439,6 @@
 
             scroll.append(root);
 
-            // Учитываем высоту верхней панели Lampa
             var head = $('.head').first();
 
             if (head.length) {
@@ -294,8 +451,8 @@
         };
 
         this.start = function () {
+            applyStyle();
             Lampa.Controller.toggle('content');
-            scroll.reset();
         };
 
         this.render = function () {
@@ -311,8 +468,7 @@
         this.empty = function () {
             root.html(
                 '<div class="filmix-tv__error">' +
-                'Не удалось загрузить каталог. ' +
-                'Проверь подключение к интернету.' +
+                'Не удалось загрузить каталог. Проверь подключение.' +
                 '</div>'
             );
         };
@@ -357,23 +513,12 @@
         }
 
         function renderHero(item) {
-            var title = titleOf(item);
-            var overview = item.overview ||
-                'Описание пока недоступно.';
-
-            var year = dateOf(item);
-
-            var rating = item.vote_average
-                ? Number(item.vote_average).toFixed(1)
-                : '';
-
             var hero = $(
                 '<section class="filmix-tv__hero">' +
                     '<img class="filmix-tv__hero-bg" />' +
                     '<div class="filmix-tv__hero-content">' +
                         '<div class="filmix-tv__eyebrow">' +
-                        'FILMIX PRO+ · ВЫБОР НЕДЕЛИ' +
-                        '</div>' +
+                        'FILMIX PRO+ · ВЫБОР НЕДЕЛИ</div>' +
                         '<div class="filmix-tv__hero-title"></div>' +
                         '<div class="filmix-tv__hero-meta"></div>' +
                         '<div class="filmix-tv__hero-description"></div>' +
@@ -387,18 +532,20 @@
                 '</section>'
             );
 
-            hero.find('.filmix-tv__hero-bg')
-                .attr('src', backdropOf(item));
+            hero.find('.filmix-tv__hero-bg').attr('src', backdropOf(item));
+            hero.find('.filmix-tv__hero-title').text(titleOf(item));
 
-            hero.find('.filmix-tv__hero-title').text(title);
+            var rating = item.vote_average
+                ? Number(item.vote_average).toFixed(1)
+                : '';
 
             hero.find('.filmix-tv__hero-meta').text(
-                [year, rating ? '★ ' + rating + ' TMDB' : '']
+                [dateOf(item), rating ? '★ ' + rating + ' TMDB' : '']
                     .filter(Boolean).join('  •  ')
             );
 
             hero.find('.filmix-tv__hero-description')
-                .text(overview);
+                .text(item.overview || 'Описание пока недоступно.');
 
             hero.find('.filmix-tv__action').on('hover:enter', function () {
                 openMovie(item);
@@ -411,8 +558,7 @@
         function loadSections(sections) {
             sections.forEach(function (section) {
                 request(section.path, function (items) {
-                    if (!alive) return;
-                    renderSection(section.title, items);
+                    if (alive) renderSection(section.title, items);
                 }, function () {
                     if (alive) renderSection(section.title, []);
                 });
@@ -427,7 +573,6 @@
             var row = $('<div class="filmix-tv__row"></div>');
 
             heading.text(title);
-            section.append(heading);
 
             items.slice(0, 20).forEach(function (item) {
                 var card = $(
@@ -440,20 +585,17 @@
 
                 var img = posterOf(item);
 
-                if (img) {
-                    card.find('img').attr('src', img);
-                }
+                if (img) card.find('img').attr('src', img);
 
-                card.find('.filmix-tv__card-title')
-                    .text(titleOf(item));
+                card.find('.filmix-tv__card-title').text(titleOf(item));
 
                 var rating = item.vote_average
                     ? '★ ' + Number(item.vote_average).toFixed(1)
                     : 'Рейтинг не указан';
 
                 card.find('.filmix-tv__card-meta').html(
-                    '<span>' + safe(dateOf(item)) + '</span>' +
-                    ' <span class="filmix-tv__rating">' +
+                    '<span>' + safe(dateOf(item)) + '</span> ' +
+                    '<span class="filmix-tv__rating">' +
                     safe(rating) + '</span>'
                 );
 
@@ -472,18 +614,14 @@
                 row.append(card);
             });
 
-            section.append(row);
+            section.append(heading).append(row);
             root.append(section);
         }
     }
 
     function init() {
-        if (!document.getElementById(STYLE)) {
-            var style = document.createElement('style');
-            style.id = STYLE;
-            style.textContent = css;
-            document.head.appendChild(style);
-        }
+        applyStyle();
+        watchStyle();
 
         if (!Lampa.Component.get(PLUGIN)) {
             Lampa.Component.add(PLUGIN, SmartTV);
@@ -497,8 +635,7 @@
             var button = $(
                 '<li class="menu__item selector filmix-smart-tv-menu">' +
                     '<div class="menu__ico">▶</div>' +
-                    '<div class="menu__text">' +
-                    'Filmix PRO+ Smart TV</div>' +
+                    '<div class="menu__text">Filmix PRO+ Smart TV</div>' +
                 '</li>'
             );
 
@@ -514,7 +651,7 @@
             menu.append(button);
         }
 
-        console.log('[Filmix PRO+] Smart TV updated');
+        console.log('[Filmix PRO+] Global Smart TV style active');
     }
 
     if (window.appready) {
