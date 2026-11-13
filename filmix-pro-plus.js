@@ -2,95 +2,228 @@
 (function () {
     'use strict';
 
-    var VERSION = '0.2.3-diagnostic';
-    var PLUGIN = 'filmix_pro_plus_diag';
-    var KEY = 'filmix_pro_plus_v023_loaded';
+    var VERSION = '1.0.0';
+    var NAME = 'filmix_pro_plus';
+    var STYLE_ID = 'filmix-pro-plus-css';
+    var BUTTON_ID = 'filmix-pro-plus-button';
+    var STORAGE_KEY = 'filmix_pro_plus_theme_enabled';
+    var CLASS_NAME = 'filmix-pro-plus-theme';
 
-    var state = {
-        version: VERSION,
-        startedAt: new Date().toISOString(),
-        appReady: false,
-        checks: {},
-        errors: [],
-        menuAttempted: false,
-        menuAdded: false,
-        componentAdded: false
-    };
+    if (window.__FILMIX_PRO_PLUS_STARTED__) return;
+    window.__FILMIX_PRO_PLUS_STARTED__ = true;
 
-    if (window[KEY]) {
-        console.log('[Filmix PRO+ ' + VERSION + '] already loaded');
-        return;
+    var enabled = true;
+    var observer = null;
+    var initialized = false;
+    var errors = [];
+
+    var css = `
+:root {
+    --fp-bg: #090c11;
+    --fp-panel: #171d25;
+    --fp-gold: #d7b56d;
+    --fp-gold-light: #f5dfaa;
+    --fp-text: #f4f1e9;
+}
+
+/* ОСНОВНОЕ ОФОРМЛЕНИЕ */
+
+body.${CLASS_NAME} {
+    background: var(--fp-bg) !important;
+    color: var(--fp-text) !important;
+}
+
+body.${CLASS_NAME} .head,
+body.${CLASS_NAME} .head__body {
+    background: rgba(9,12,17,.97) !important;
+}
+
+body.${CLASS_NAME} .head__title,
+body.${CLASS_NAME} .menu__title,
+body.${CLASS_NAME} .category__title,
+body.${CLASS_NAME} .full-start__title,
+body.${CLASS_NAME} .full-start-new__title {
+    color: var(--fp-gold-light) !important;
+}
+
+body.${CLASS_NAME} .items-line__head {
+    border-bottom: 1px solid rgba(215,181,109,.35) !important;
+}
+
+body.${CLASS_NAME} .card__view {
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+
+body.${CLASS_NAME} .card.focus .card__view,
+body.${CLASS_NAME} .card.traverse .card__view {
+    outline: 2px solid var(--fp-gold) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 18px rgba(215,181,109,.3) !important;
+}
+
+body.${CLASS_NAME} .card__title {
+    color: var(--fp-text) !important;
+}
+
+body.${CLASS_NAME} .menu {
+    background: var(--fp-panel) !important;
+}
+
+body.${CLASS_NAME} .menu__item.focus,
+body.${CLASS_NAME} .selector.focus,
+body.${CLASS_NAME} .full-start__button.focus,
+body.${CLASS_NAME} .full-start-new__button.focus {
+    background: var(--fp-gold) !important;
+    color: #17130b !important;
+    border-color: var(--fp-gold-light) !important;
+}
+
+body.${CLASS_NAME} .modal__content,
+body.${CLASS_NAME} .selectbox,
+body.${CLASS_NAME} .settings {
+    background: var(--fp-panel) !important;
+    color: var(--fp-text) !important;
+}
+
+/* КОМПАКТНАЯ КНОПКА FILMIX */
+
+#${BUTTON_ID} {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+
+    width: 19px !important;
+    height: 19px !important;
+    min-width: 19px !important;
+    min-height: 19px !important;
+    max-width: 19px !important;
+    max-height: 19px !important;
+
+    flex: 0 0 19px !important;
+    padding: 0 !important;
+    margin: 0 4px !important;
+
+    border-radius: 50% !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    background: #202127 !important;
+    color: #e7c77f !important;
+
+    box-shadow: none !important;
+    overflow: hidden !important;
+    transform: none !important;
+}
+
+#${BUTTON_ID} svg {
+    display: block !important;
+    width: 10px !important;
+    height: 10px !important;
+    min-width: 10px !important;
+    min-height: 10px !important;
+    max-width: 10px !important;
+    max-height: 10px !important;
+    flex: 0 0 10px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    fill: currentColor !important;
+}
+
+#${BUTTON_ID}.off {
+    color: #9299a2 !important;
+    background: #202127 !important;
+    border-color: rgba(255,255,255,.12) !important;
+}
+
+#${BUTTON_ID}:focus {
+    outline: 1px solid var(--fp-gold) !important;
+    outline-offset: 1px !important;
+}
+
+@media (max-width: 700px) {
+    body.${CLASS_NAME} .card__view {
+        border-radius: 7px !important;
     }
+}
+`;
 
-    window[KEY] = true;
-    window.filmix_pro_plus_diagnostics = state;
+    function log(message, error) {
+        console.log('[Filmix PRO+ ' + VERSION + '] ' + message);
 
-    function check(name, ok, detail) {
-        state.checks[name] = {
-            ok: !!ok,
-            detail: detail || ''
-        };
-
-        console.log(
-            '[Filmix PRO+ ' + VERSION + '] ' +
-            name + ': ' + (ok ? 'OK' : 'FAIL') +
-            (detail ? ' — ' + detail : '')
-        );
-    }
-
-    function recordError(stage, err) {
-        var message = err && err.message
-            ? err.message
-            : String(err || 'unknown error');
-
-        state.errors.push({
-            stage: stage,
-            message: message
-        });
-
-        console.error(
-            '[Filmix PRO+ ' + VERSION + '] ' + stage,
-            err || ''
-        );
-    }
-
-    function reportText() {
-        var lines = [
-            'Filmix PRO+ diagnostic ' + VERSION
-        ];
-
-        Object.keys(state.checks).forEach(function (name) {
-            var item = state.checks[name];
-
-            lines.push(
-                (item.ok ? '[OK] ' : '[FAIL] ') +
-                name +
-                (item.detail ? ': ' + item.detail : '')
-            );
-        });
-
-        if (state.errors.length) {
-            lines.push('Ошибки:');
-
-            state.errors.forEach(function (item) {
-                lines.push(
-                    item.stage + ': ' + item.message
-                );
+        if (error) {
+            errors.push({
+                message: message,
+                error: String(error.message || error)
             });
+
+            console.error('[Filmix PRO+]', error);
+        }
+    }
+
+    function readSetting() {
+        try {
+            if (
+                window.Lampa &&
+                Lampa.Storage &&
+                typeof Lampa.Storage.get === 'function'
+            ) {
+                return Lampa.Storage.get(STORAGE_KEY, true) !== false;
+            }
+        } catch (e) {
+            log('Ошибка чтения настройки Lampa.Storage', e);
         }
 
-        return lines.join('\n');
+        try {
+            return localStorage.getItem(STORAGE_KEY) !== 'false';
+        } catch (e) {
+            log('Ошибка чтения localStorage', e);
+        }
+
+        return true;
     }
 
-    function notify() {
-        var message =
-            'Filmix PRO+ диагностика ' + VERSION +
-            ': компонент ' +
-            (state.componentAdded ? 'OK' : 'ошибка') +
-            ', кнопка меню ' +
-            (state.menuAdded ? 'OK' : 'не добавлена') +
-            '. Подробности — в консоли Luxo/Lampa.';
+    function saveSetting() {
+        try {
+            if (
+                window.Lampa &&
+                Lampa.Storage &&
+                typeof Lampa.Storage.set === 'function'
+            ) {
+                Lampa.Storage.set(STORAGE_KEY, enabled);
+            }
+        } catch (e) {
+            log('Ошибка сохранения настройки Lampa.Storage', e);
+        }
 
+        try {
+            localStorage.setItem(
+                STORAGE_KEY,
+                enabled ? 'true' : 'false'
+            );
+        } catch (e) {
+            log('Ошибка сохранения localStorage', e);
+        }
+    }
+
+    function installStyle() {
+        if (!document.head || !document.body) return;
+
+        var style = document.getElementById(STYLE_ID);
+
+        if (!style) {
+            style = document.createElement('style');
+            style.id = STYLE_ID;
+            document.head.appendChild(style);
+        }
+
+        if (style.textContent !== css) {
+            style.textContent = css;
+        }
+
+        document.body.classList.toggle(CLASS_NAME, enabled);
+    }
+
+    function notify(message) {
         try {
             if (
                 window.Lampa &&
@@ -100,245 +233,184 @@
                 Lampa.Noty.show(message);
             }
         } catch (e) {
-            recordError('Noty.show', e);
+            log('Ошибка уведомления', e);
         }
     }
 
-    function DiagnosticScreen() {
-        var $ = window.jQuery || window.$;
-        var root;
+    function updateButton() {
+        var button = document.getElementById(BUTTON_ID);
+        if (!button) return;
 
-        this.create = function () {
-            if (!$) {
-                throw new Error('jQuery Lampa недоступен');
-            }
+        button.classList.toggle('off', !enabled);
 
-            root = $(
-                '<div class="filmix-pro-plus-diagnostic" ' +
-                'style="padding:3em;color:#fff;white-space:pre-wrap;">' +
-                '</div>'
-            );
+        button.setAttribute(
+            'aria-label',
+            enabled ? 'Выключить оформление' : 'Включить оформление'
+        );
 
-            root.text(reportText());
-
-            return root;
-        };
-
-        this.render = function () {
-            return root;
-        };
-
-        this.start = function () {
-            if (
-                window.Lampa &&
-                Lampa.Controller &&
-                typeof Lampa.Controller.toggle === 'function'
-            ) {
-                Lampa.Controller.toggle('content');
-            }
-        };
-
-        this.pause = function () {};
-        this.stop = function () {};
-
-        this.destroy = function () {
-            if (root) {
-                root.remove();
-            }
-
-            if (
-                window.Lampa &&
-                Lampa.Controller &&
-                typeof Lampa.Controller.toggle === 'function'
-            ) {
-                Lampa.Controller.toggle('content');
-            }
-        };
+        button.setAttribute(
+            'title',
+            enabled ? 'Filmix PRO+ — тема включена' : 'Filmix PRO+ — тема выключена'
+        );
     }
 
-    function openDiagnostics() {
-        try {
-            if (
-                window.Lampa &&
-                Lampa.Activity &&
-                typeof Lampa.Activity.push === 'function'
-            ) {
-                Lampa.Activity.push({
-                    url: '',
-                    title: 'Filmix PRO+ — диагностика',
-                    component: PLUGIN,
-                    page: 1
-                });
-            }
-        } catch (e) {
-            recordError('Activity.push', e);
-            notify();
+    function toggleTheme() {
+        enabled = !enabled;
+
+        saveSetting();
+        installStyle();
+        updateButton();
+
+        notify(
+            enabled
+                ? 'Filmix PRO+: оформление включено'
+                : 'Filmix PRO+: оформление выключено'
+        );
+
+        log('Тема: ' + (enabled ? 'включена' : 'выключена'));
+    }
+
+    function findHeader() {
+        return document.querySelector(
+            '.head__actions, .head__actions-list, .head__right'
+        );
+    }
+
+    function installButton() {
+        var header = findHeader();
+
+        if (!header) return false;
+
+        var button = document.getElementById(BUTTON_ID);
+
+        if (button && button.isConnected) {
+            if (header.contains(button)) return true;
+            button.remove();
         }
+
+        button = document.createElement('button');
+        button.id = BUTTON_ID;
+        button.type = 'button';
+        button.className = 'selector filmix-pro-plus-button';
+
+        button.innerHTML =
+            '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+            '<path d="M12 2l2.5 6.2L21 10l-6.5 2.1L12 18l-2.5-5.9L3 10l6.5-1.8z"/>' +
+            '</svg>';
+
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleTheme();
+        });
+
+        var moreButton = header.querySelector(
+            '.head__action--more, ' +
+            '[data-action="more"], ' +
+            '.head__action--menu'
+        );
+
+        if (moreButton) {
+            header.insertBefore(button, moreButton);
+        } else {
+            header.appendChild(button);
+        }
+
+        updateButton();
+
+        return true;
+    }
+
+    function refresh() {
+        installStyle();
+        installButton();
+    }
+
+    function startObserver() {
+        if (
+            observer ||
+            !window.MutationObserver ||
+            !document.documentElement
+        ) {
+            return;
+        }
+
+        observer = new MutationObserver(function () {
+            var styleMissing = !document.getElementById(STYLE_ID);
+            var buttonMissing = !document.getElementById(BUTTON_ID);
+
+            var classMissing =
+                document.body &&
+                document.body.classList.contains(CLASS_NAME) !== enabled;
+
+            if (styleMissing || buttonMissing || classMissing) {
+                refresh();
+            }
+        });
+
+        observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true
+        });
+
+        log('Наблюдатель интерфейса запущен');
     }
 
     function runChecks() {
-        state.appReady = !!window.appready;
-
-        check('window.Lampa', !!window.Lampa);
-        check('appready', state.appReady);
-
-        check(
-            'jQuery',
-            !!(window.jQuery || window.$)
-        );
-
-        check(
-            'Lampa.Component.add',
-            !!(
+        var checks = {
+            Lampa: !!window.Lampa,
+            appready: !!window.appready,
+            Storage: !!(
                 window.Lampa &&
-                Lampa.Component &&
-                typeof Lampa.Component.add === 'function'
-            )
-        );
-
-        check(
-            'Lampa.Activity.push',
-            !!(
-                window.Lampa &&
-                Lampa.Activity &&
-                typeof Lampa.Activity.push === 'function'
-            )
-        );
-
-        check(
-            'Lampa.Menu.addButton',
-            !!(
-                window.Lampa &&
-                Lampa.Menu &&
-                typeof Lampa.Menu.addButton === 'function'
+                Lampa.Storage &&
+                typeof Lampa.Storage.get === 'function' &&
+                typeof Lampa.Storage.set === 'function'
             ),
-            window.Lampa &&
-            Lampa.Menu &&
-            Lampa.Menu.addButton
-                ? 'function.length=' + Lampa.Menu.addButton.length
-                : 'метод отсутствует'
-        );
-
-        check(
-            'Lampa.Noty.show',
-            !!(
+            Noty: !!(
                 window.Lampa &&
                 Lampa.Noty &&
                 typeof Lampa.Noty.show === 'function'
-            )
-        );
+            ),
+            header: !!findHeader(),
+            style: !!document.getElementById(STYLE_ID),
+            button: !!document.getElementById(BUTTON_ID)
+        };
 
-        check(
-            'Lampa.Controller',
-            !!(window.Lampa && Lampa.Controller)
-        );
+        window.filmix_pro_plus_status = {
+            version: VERSION,
+            checks: checks,
+            errors: errors
+        };
 
-        check(
-            'Lampa.Controller.collectionSet',
-            !!(
-                window.Lampa &&
-                Lampa.Controller &&
-                typeof Lampa.Controller.collectionSet === 'function'
-            )
-        );
+        Object.keys(checks).forEach(function (key) {
+            log(key + ': ' + (checks[key] ? 'OK' : 'не найдено'));
+        });
+    }
 
-        check(
-            'Lampa.Listener.follow',
-            !!(
-                window.Lampa &&
-                Lampa.Listener &&
-                typeof Lampa.Listener.follow === 'function'
-            )
-        );
+    function initialize() {
+        if (initialized) return;
+        if (!window.Lampa || !document.body) return;
 
-        try {
-            if (
-                window.Lampa &&
-                Lampa.Component &&
-                typeof Lampa.Component.add === 'function'
-            ) {
-                Lampa.Component.add(
-                    PLUGIN,
-                    DiagnosticScreen
-                );
+        initialized = true;
+        enabled = readSetting();
 
-                state.componentAdded = true;
+        refresh();
+        startObserver();
 
-                check(
-                    'register component',
-                    true,
-                    PLUGIN
-                );
-            } else {
-                check(
-                    'register component',
-                    false,
-                    'Lampa.Component.add отсутствует'
-                );
+        window.filmix_pro_plus = {
+            version: VERSION,
+            toggle: toggleTheme,
+            refresh: refresh,
+            status: function () {
+                runChecks();
+                return window.filmix_pro_plus_status;
             }
-        } catch (e) {
-            recordError('Component.add', e);
+        };
 
-            check(
-                'register component',
-                false,
-                e.message
-            );
-        }
+        runChecks();
 
-        try {
-            if (
-                window.Lampa &&
-                Lampa.Menu &&
-                typeof Lampa.Menu.addButton === 'function'
-            ) {
-                state.menuAttempted = true;
-
-                var icon =
-                    '<svg xmlns="http://www.w3.org/2000/svg" ' +
-                    'viewBox="0 0 24 24">' +
-                    '<path fill="currentColor" ' +
-                    'd="M4 4h16v3H4zm0 6h16v3H4zm0 6h16v3H4z"/>' +
-                    '</svg>';
-
-                Lampa.Menu.addButton(
-                    icon,
-                    'Filmix PRO+ диагностика',
-                    openDiagnostics
-                );
-
-                state.menuAdded = true;
-
-                check(
-                    'add menu button',
-                    true,
-                    'вызов addButton завершился без ошибки'
-                );
-            } else {
-                check(
-                    'add menu button',
-                    false,
-                    'Lampa.Menu.addButton недоступен'
-                );
-            }
-        } catch (e) {
-            recordError('Menu.addButton', e);
-
-            check(
-                'add menu button',
-                false,
-                e.message
-            );
-        }
-
-        state.finishedAt = new Date().toISOString();
-
-        console.log(
-            '[Filmix PRO+ ' + VERSION + '] FULL REPORT\n' +
-            reportText()
-        );
-
-        notify();
+        log('Плагин успешно инициализирован');
+        log('Версия ' + VERSION);
     }
 
     function bootstrap() {
@@ -348,34 +420,23 @@
         var timer = setInterval(function () {
             attempts++;
 
-            if (window.Lampa && window.appready) {
+            if (window.Lampa && window.appready && document.body) {
                 clearInterval(timer);
-                runChecks();
+                initialize();
             } else if (attempts >= maxAttempts) {
                 clearInterval(timer);
+                log('Тайм-аут ожидания готовности Lampa');
 
-                check(
-                    'Lampa ready within 30s',
-                    false,
-                    'тайм-аут ожидания приложения'
-                );
-
-                state.finishedAt = new Date().toISOString();
-
-                console.log(
-                    '[Filmix PRO+ ' + VERSION + '] FULL REPORT\n' +
-                    reportText()
-                );
-
-                notify();
+                window.filmix_pro_plus_status = {
+                    version: VERSION,
+                    initialized: false,
+                    error: 'Lampa не стала готова за 30 секунд'
+                };
             }
         }, 300);
     }
 
-    console.log(
-        '[Filmix PRO+ ' + VERSION + '] script loaded'
-    );
-
+    log('Скрипт загружен');
     bootstrap();
 
 })();
