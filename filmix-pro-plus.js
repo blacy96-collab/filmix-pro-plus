@@ -2,12 +2,11 @@
 (function () {
     'use strict';
 
-    /* Filmix PRO+ Cardify Edition — v2.0.0 */
+    /* Filmix PRO+ Cardify Edition — unified plugin for Lampa */
     var VERSION = '2.0.0';
     var COMPONENT = 'filmix_pro_plus';
     var STYLE_ID = 'filmix-pro-plus-unified-style';
     var API_URL = 'http://filmixapp.cyou/api/v2/';
-
     var STORAGE = {
         enabled: 'filmix_pro_plus_enabled',
         cardify: 'filmix_pro_plus_cardify',
@@ -39,17 +38,12 @@
         try {
             var value = Lampa.Storage.get(key, fallback);
             return value === undefined || value === null ? fallback : value;
-        } catch (e) {
-            return fallback;
-        }
+        } catch (e) { return fallback; }
     }
 
     function storageSet(key, value) {
-        try {
-            Lampa.Storage.set(key, value);
-        } catch (e) {
-            log('Storage error', key, e);
-        }
+        try { Lampa.Storage.set(key, value); }
+        catch (e) { log('Storage error', key, e); }
     }
 
     function isEnabled() {
@@ -139,7 +133,7 @@
         body.filmix-pro-plus-theme .card.traverse .card__view {
             outline:2px solid var(--fpp-accent)!important;
             outline-offset:2px!important;
-            box-shadow:0 0 18px rgba(215,181,109,.3)!important;
+            box-shadow:0 0 18px rgba(215,181,109,.30)!important;
         }
 
         body.filmix-pro-plus-theme .card__title {
@@ -272,7 +266,7 @@
         authModal = null;
     }
 
-    function profileRequest(token, callback) {
+    function profileRequest(token, callback, silentError) {
         if (!network) network = new Lampa.Reguest();
 
         network.clear();
@@ -294,7 +288,9 @@
             },
 
             function (a, c) {
-                notify(network.errorDecode(a, c));
+                if (!silentError) {
+                    notify(network.errorDecode(a, c));
+                }
             }
         );
     }
@@ -326,13 +322,17 @@
     }
 
     function renderStatus() {
-        var value = document.querySelector(
-            '[data-name="fpp_account_status"] .settings-param__value'
+        var row = document.querySelector(
+            '[data-name="fpp_account_status"]'
         );
 
-        if (value) {
-            value.textContent = accountStatusText();
-        }
+        if (!row) return;
+
+        var value = row.querySelector('.settings-param__value');
+        var descr = row.querySelector('.settings-param__descr');
+
+        if (value) value.textContent = accountStatusText();
+        if (descr) descr.textContent = accountStatusText();
     }
 
     function startAuthorization() {
@@ -342,7 +342,6 @@
         }
 
         stopPolling();
-
         authToken = '';
         authCode = '';
         deviceQuery = '';
@@ -414,13 +413,10 @@
                     pollTimer = setInterval(function () {
                         profileRequest(authToken, function () {
                             storageSet(STORAGE.token, authToken);
-
                             notify('Filmix успешно подключён');
-
                             closeAuthModal();
-
                             Lampa.Controller.toggle('settings_component');
-                        });
+                        }, true);
                     }, 10000);
                 } else {
                     notify(
@@ -437,7 +433,6 @@
 
             function (a, c) {
                 notify(network.errorDecode(a, c));
-
                 body.find('.broadcast__device').text(
                     'Ошибка соединения с Filmix'
                 );
@@ -446,8 +441,9 @@
     }
 
     function addSettings() {
+        if (settingsRegistered) return true;
+
         if (
-            settingsRegistered ||
             !Lampa.SettingsApi ||
             !Lampa.SettingsApi.addComponent ||
             !Lampa.SettingsApi.addParam
@@ -455,213 +451,252 @@
             return false;
         }
 
-        settingsRegistered = true;
-
-        Lampa.SettingsApi.addComponent({
-            component: COMPONENT,
-            name: 'Filmix PRO+ · Cardify',
-            icon: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
-                '<path fill="currentColor" d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm1 3v12h14V6H5zm2 2h5v8H7V8zm7 0h5v2h-5V8zm0 4h5v2h-5v-2z"/>' +
-                '</svg>'
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: COMPONENT,
-            param: {
-                name: STORAGE.enabled,
-                type: 'trigger',
-                default: true
-            },
-            field: {
-                name: 'Включить Filmix PRO+'
-            },
-            onChange: function () {
-                applyTheme();
-                updateCardifyClass();
-            }
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: COMPONENT,
-            param: {
-                name: STORAGE.cardify,
-                type: 'trigger',
-                default: true
-            },
-            field: {
-                name: 'Оформление карточек Cardify',
-                description: 'Компактное расположение информации и рейтингов'
-            },
-            onChange: function () {
-                applyTheme();
-                updateCardifyClass();
-            }
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: COMPONENT,
-            param: {
-                name: STORAGE.theme,
-                type: 'select',
-                values: 'navy_gold,graphite,black_red',
-                default: 'navy_gold'
-            },
-            field: {
-                name: 'Цветовая тема',
-                description: 'Navy Gold / Graphite / Black Red'
-            },
-            onChange: applyTheme
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: COMPONENT,
-            param: {
-                name: 'fpp_auth_action',
-                type: 'trigger',
-                default: false
-            },
-            field: {
-                name: 'Подключить / переподключить Filmix',
-                description: 'Получить одноразовый код для привязки устройства'
-            },
-            onChange: function (value) {
-                if (value) {
-                    startAuthorization();
-                    storageSet('fpp_auth_action', false);
-                }
-            }
-        });
-
-        Lampa.SettingsApi.addParam({
-            component: COMPONENT,
-            param: {
-                name: 'fpp_status_refresh',
-                type: 'trigger',
-                default: false
-            },
-            field: {
-                name: 'Обновить статус аккаунта'
-            },
-            onChange: function (value) {
-                if (value) {
-                    var token = storageGet(STORAGE.token, '');
-
-                    if (token) {
-                        profileRequest(token);
-                    } else {
-                        notify('Сначала подключите Filmix');
-                    }
-
-                    storageSet('fpp_status_refresh', false);
-                }
-            }
-        });
-
-        if (
-            Lampa.Settings &&
-            Lampa.Settings.listener &&
-            Lampa.Settings.listener.follow
-        ) {
-            Lampa.Settings.listener.follow('open', function (e) {
-                if (e.name !== COMPONENT || !e.body) return;
-
-                e.body.find('[data-name="fpp_account_status"]').remove();
-
-                var statusField = $(
-                    '<div class="settings-param" data-name="fpp_account_status">' +
-                    '<div class="settings-param__name">Статус аккаунта Filmix</div>' +
-                    '<div class="settings-param__value"></div>' +
-                    '</div>'
-                );
-
-                e.body.append(statusField);
-
-                renderStatus();
+        try {
+            Lampa.SettingsApi.addComponent({
+                component: COMPONENT,
+                name: 'Filmix PRO+ · Cardify',
+                icon: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+                    '<path fill="white" d="M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm1 3v12h14V6H5zm2 2h5v8H7V8zm7 0h5v2h-5V8zm0 4h5v2h-5v-2z"/>' +
+                    '</svg>'
             });
-        }
 
-        return true;
-    }
-
-    function legacySettingsFallback() {
-        if (!Lampa.Settings || !Lampa.Settings.main) return;
-
-        var main = Lampa.Settings.main();
-
-        if (!main || !main.render) return;
-
-        var root = main.render();
-
-        if (root.find('[data-component="' + COMPONENT + '"]').length) {
-            return;
-        }
-
-        var folder = $(
-            '<div class="settings-folder selector" data-component="' +
-            COMPONENT +
-            '">' +
-            '<div class="settings-folder__icon">✦</div>' +
-            '<div class="settings-folder__name">Filmix PRO+ · Cardify</div>' +
-            '</div>'
-        );
-
-        var more = root.find('[data-component="more"]');
-
-        if (more.length) {
-            more.after(folder);
-        } else {
-            root.append(folder);
-        }
-
-        main.update();
-
-        Lampa.Settings.listener.follow('open', function (e) {
-            if (e.name !== COMPONENT) return;
-
-            var html = $(
-                '<div class="settings">' +
-                '<div class="settings-param selector" data-name="fpp_auth">' +
-                '<div class="settings-param__name">Подключить / переподключить Filmix</div>' +
-                '</div>' +
-                '<div class="settings-param selector" data-name="fpp_refresh">' +
-                '<div class="settings-param__name">Обновить статус аккаунта</div>' +
-                '</div>' +
-                '<div class="settings-param">' +
-                '<div class="settings-param__name">Статус аккаунта</div>' +
-                '<div class="settings-param__value">' + accountStatusText() + '</div>' +
-                '</div>' +
-                '<div class="settings-param selector" data-name="fpp_enable">' +
-                '<div class="settings-param__name">Включить / выключить оформление</div>' +
-                '</div>' +
-                '</div>'
-            );
-
-            e.body.empty().append(html);
-
-            html.find('[data-name="fpp_auth"]').on(
-                'hover:enter',
-                startAuthorization
-            );
-
-            html.find('[data-name="fpp_refresh"]').on(
-                'hover:enter',
-                function () {
-                    var token = storageGet(STORAGE.token, '');
-
-                    if (token) profileRequest(token);
-                    else notify('Сначала подключите Filmix');
-                }
-            );
-
-            html.find('[data-name="fpp_enable"]').on(
-                'hover:enter',
-                function () {
-                    storageSet(STORAGE.enabled, !isEnabled());
+            Lampa.SettingsApi.addParam({
+                component: COMPONENT,
+                param: {
+                    name: STORAGE.enabled,
+                    type: 'trigger',
+                    default: true
+                },
+                field: {
+                    name: 'Включить Filmix PRO+'
+                },
+                onChange: function () {
                     applyTheme();
                     updateCardifyClass();
                 }
+            });
+
+            Lampa.SettingsApi.addParam({
+                component: COMPONENT,
+                param: {
+                    name: STORAGE.cardify,
+                    type: 'trigger',
+                    default: true
+                },
+                field: {
+                    name: 'Оформление карточек Cardify',
+                    description: 'Компактное расположение информации и рейтингов'
+                },
+                onChange: function () {
+                    applyTheme();
+                    updateCardifyClass();
+                }
+            });
+
+            Lampa.SettingsApi.addParam({
+                component: COMPONENT,
+                param: {
+                    name: STORAGE.theme,
+                    type: 'select',
+                    values: {
+                        navy_gold: 'Navy Gold',
+                        graphite: 'Graphite',
+                        black_red: 'Black Red'
+                    },
+                    default: 'navy_gold'
+                },
+                field: {
+                    name: 'Цветовая тема'
+                },
+                onChange: applyTheme
+            });
+
+            Lampa.SettingsApi.addParam({
+                component: COMPONENT,
+                param: {
+                    name: 'fpp_auth_action',
+                    type: 'static',
+                    default: true
+                },
+                field: {
+                    name: 'Подключить / переподключить Filmix',
+                    description: 'Получить одноразовый код привязки'
+                },
+                onRender: function (item) {
+                    item.addClass('selector');
+                    item.on('hover:enter', startAuthorization);
+                }
+            });
+
+            Lampa.SettingsApi.addParam({
+                component: COMPONENT,
+                param: {
+                    name: 'fpp_status_refresh',
+                    type: 'static',
+                    default: true
+                },
+                field: {
+                    name: 'Обновить статус аккаунта'
+                },
+                onRender: function (item) {
+                    item.addClass('selector');
+
+                    item.on('hover:enter', function () {
+                        var token = storageGet(STORAGE.token, '');
+
+                        if (token) profileRequest(token);
+                        else notify('Сначала подключите Filmix');
+                    });
+                }
+            });
+
+            Lampa.SettingsApi.addParam({
+                component: COMPONENT,
+                param: {
+                    name: 'fpp_account_status',
+                    type: 'static',
+                    default: true
+                },
+                field: {
+                    name: 'Статус аккаунта Filmix',
+                    description: accountStatusText()
+                },
+                onRender: function (item) {
+                    item.find('.settings-param__descr').text(
+                        accountStatusText()
+                    );
+                }
+            });
+
+            settingsRegistered = true;
+            return true;
+        } catch (error) {
+            log(
+                'SettingsApi registration failed; using native settings template',
+                error
             );
-        });
+            return false;
+        }
+    }
+
+    function legacySettingsFallback() {
+        if (
+            !Lampa.Settings ||
+            !Lampa.Settings.main ||
+            !Lampa.Template ||
+            !Lampa.Template.add
+        ) {
+            return false;
+        }
+
+        var main = Lampa.Settings.main();
+
+        if (!main || !main.render) return false;
+
+        Lampa.Template.add(
+            'settings_' + COMPONENT,
+            '<div>' +
+                '<div class="settings-param selector" data-name="fpp_auth" data-static="true">' +
+                    '<div class="settings-param__name">Подключить / переподключить Filmix</div>' +
+                    '<div class="settings-param__descr">Получить одноразовый код привязки</div>' +
+                '</div>' +
+                '<div class="settings-param selector" data-name="fpp_refresh" data-static="true">' +
+                    '<div class="settings-param__name">Обновить статус аккаунта</div>' +
+                '</div>' +
+                '<div class="settings-param" data-name="fpp_account_status" data-static="true">' +
+                    '<div class="settings-param__name">Статус аккаунта Filmix</div>' +
+                    '<div class="settings-param__value">Устройство не авторизовано</div>' +
+                '</div>' +
+                '<div class="settings-param selector" data-name="fpp_enable" data-static="true">' +
+                    '<div class="settings-param__name">Включить / выключить оформление</div>' +
+                '</div>' +
+                '<div class="settings-param selector" data-name="fpp_cardify" data-static="true">' +
+                    '<div class="settings-param__name">Включить / выключить Cardify</div>' +
+                '</div>' +
+            '</div>'
+        );
+
+        var root = main.render();
+
+        if (!root.find('[data-component="' + COMPONENT + '"]').length) {
+            var folder = $(
+                '<div class="settings-folder selector" data-component="' +
+                COMPONENT +
+                '">' +
+                '<div class="settings-folder__icon">✦</div>' +
+                '<div class="settings-folder__name">Filmix PRO+ · Cardify</div>' +
+                '</div>'
+            );
+
+            var more = root.find('[data-component="more"]');
+
+            if (more.length) more.after(folder);
+            else root.append(folder);
+
+            if (main.update) main.update();
+        }
+
+        if (!window.__FPP_LEGACY_SETTINGS_BOUND__) {
+            window.__FPP_LEGACY_SETTINGS_BOUND__ = true;
+
+            Lampa.Settings.listener.follow('open', function (e) {
+                if (e.name !== COMPONENT || !e.body) return;
+
+                var body = e.body;
+
+                body.find('[data-name="fpp_auth"]')
+                    .off('hover:enter')
+                    .on('hover:enter', startAuthorization);
+
+                body.find('[data-name="fpp_refresh"]')
+                    .off('hover:enter')
+                    .on('hover:enter', function () {
+                        var token = storageGet(STORAGE.token, '');
+
+                        if (token) profileRequest(token);
+                        else notify('Сначала подключите Filmix');
+                    });
+
+                body.find('[data-name="fpp_enable"]')
+                    .off('hover:enter')
+                    .on('hover:enter', function () {
+                        storageSet(STORAGE.enabled, !isEnabled());
+                        applyTheme();
+                        updateCardifyClass();
+
+                        notify(
+                            isEnabled()
+                                ? 'Оформление включено'
+                                : 'Оформление выключено'
+                        );
+                    });
+
+                body.find('[data-name="fpp_cardify"]')
+                    .off('hover:enter')
+                    .on('hover:enter', function () {
+                        storageSet(STORAGE.cardify, !isCardify());
+                        applyTheme();
+                        updateCardifyClass();
+
+                        notify(
+                            isCardify()
+                                ? 'Cardify включён'
+                                : 'Cardify выключен'
+                        );
+                    });
+
+                var status = body.find(
+                    '[data-name="fpp_account_status"] .settings-param__value'
+                );
+
+                if (status.length) {
+                    status.text(accountStatusText());
+                }
+            });
+        }
+
+        settingsRegistered = true;
+        return true;
     }
 
     function initialize() {
@@ -684,6 +719,14 @@
         applyTheme();
         addFullListener();
 
+        try {
+            if (Lampa.Params && Lampa.Params.select) {
+                Lampa.Params.select(STORAGE.token, '', '');
+            }
+        } catch (e) {
+            log('Filmix token parameter registration skipped', e);
+        }
+
         if (!addSettings()) {
             legacySettingsFallback();
         }
@@ -692,9 +735,7 @@
 
         var token = storageGet(STORAGE.token, '');
 
-        if (token) {
-            profileRequest(token);
-        }
+        if (token) profileRequest(token);
 
         log('Initialized');
     }
