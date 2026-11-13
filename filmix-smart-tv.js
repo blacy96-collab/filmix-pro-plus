@@ -3,23 +3,180 @@
     'use strict';
 
     var PLUGIN = 'filmix_smart_tv';
-    var STYLE = 'filmix-smart-tv-real-style';
-    var BODY = 'filmix-smart-tv';
+    var STYLE = 'filmix-smart-tv-global-style';
 
     if (window.filmixSmartTVRealLoaded) return;
     window.filmixSmartTVRealLoaded = true;
 
     var css = `
-    /* ОСНОВНОЙ ИНТЕРФЕЙС */
-    body.${BODY} {
-        background: #101113 !important;
-        color: #f4f4f4 !important;
+    /* FILMIX PRO+ GLOBAL THEME */
+
+    :root {
         --ft-orange: #ed762e;
+        --ft-gold: #d8b66b;
+        --ft-gold-light: #f2d99b;
+        --ft-bg: #101113;
         --ft-panel: #1b1d20;
+        --ft-panel-light: #292b2f;
+        --ft-text: #f4f4f4;
         --ft-muted: #a4a5a7;
     }
 
-    body.${BODY} .filmix-tv {
+    html,
+    body {
+        background: var(--ft-bg) !important;
+        color: var(--ft-text) !important;
+    }
+
+    /* HEADER */
+
+    .head,
+    .head__body {
+        background: rgba(16,17,19,.97) !important;
+        color: var(--ft-text) !important;
+    }
+
+    .head__title {
+        color: var(--ft-gold-light) !important;
+    }
+
+    /* MENU */
+
+    .menu {
+        background: #17191c !important;
+        color: var(--ft-text) !important;
+        border-right: 1px solid rgba(216,182,107,.18) !important;
+    }
+
+    .menu__item {
+        border-radius: 9px !important;
+        transition: all .2s ease !important;
+    }
+
+    .menu__item.focus {
+        background: #30251f !important;
+        color: var(--ft-gold-light) !important;
+        border-left: 3px solid var(--ft-orange) !important;
+        box-shadow: 0 0 15px rgba(237,118,46,.15) !important;
+    }
+
+    .menu__item.focus .menu__text,
+    .menu__item.focus .menu__ico {
+        color: #fff !important;
+    }
+
+    /* ALL INTERACTIVE ELEMENTS */
+
+    .selector,
+    button,
+    .button,
+    .head__action,
+    .menu__item,
+    .full-start__button,
+    .modal__button,
+    .selectbox__item,
+    .settings-param {
+        transition:
+            background-color .2s ease,
+            color .2s ease,
+            border-color .2s ease,
+            box-shadow .2s ease !important;
+    }
+
+    .button,
+    button,
+    .full-start__button {
+        border-radius: 9px !important;
+    }
+
+    .selector.focus,
+    button.focus,
+    .button.focus,
+    .head__action.focus,
+    .full-start__button.focus,
+    .modal__button.focus,
+    .selectbox__item.focus,
+    .settings-param.focus {
+        background: var(--ft-orange) !important;
+        color: #fff !important;
+        border-color: var(--ft-gold-light) !important;
+        box-shadow: 0 0 17px rgba(237,118,46,.35) !important;
+        outline: none !important;
+    }
+
+    /* MOVIE DETAILS */
+
+    .full-start__title,
+    .full-start-new__title {
+        color: var(--ft-gold-light) !important;
+    }
+
+    .full-start__body,
+    .full-start-new__body {
+        color: var(--ft-text) !important;
+    }
+
+    .full-start__button,
+    .full-start-new__button {
+        background: #202226 !important;
+        color: #f5f5f5 !important;
+        border: 1px solid rgba(216,182,107,.35) !important;
+    }
+
+    .full-start__button.focus,
+    .full-start-new__button.focus {
+        background: var(--ft-orange) !important;
+        color: #fff !important;
+    }
+
+    /* MODALS AND SETTINGS */
+
+    .modal,
+    .modal__content,
+    .selectbox,
+    .settings {
+        background: #191b1e !important;
+        color: var(--ft-text) !important;
+    }
+
+    .selectbox__item.focus,
+    .settings-param.focus {
+        background: #30251f !important;
+        color: var(--ft-gold-light) !important;
+    }
+
+    /* SEARCH */
+
+    input,
+    textarea {
+        background: #202226 !important;
+        color: #fff !important;
+        border: 1px solid #494b4e !important;
+        border-radius: 8px !important;
+    }
+
+    input:focus,
+    textarea:focus {
+        border-color: var(--ft-orange) !important;
+    }
+
+    /* CATEGORIES AND TITLES */
+
+    .category__title,
+    .title {
+        color: var(--ft-gold-light) !important;
+    }
+
+    /* SCROLLBAR */
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--ft-orange) !important;
+        border-radius: 10px;
+    }
+
+    /* FILMIX SMART TV PAGE */
+
+    .filmix-tv {
         background: #101113;
         color: #f4f4f4;
         width: 100%;
@@ -28,8 +185,7 @@
         box-sizing: border-box;
     }
 
-    /* ГЛАВНЫЙ БАННЕР */
-    body.${BODY} .filmix-tv__hero {
+    .filmix-tv__hero {
         display: flex;
         flex-direction: column;
         position: relative;
@@ -39,7 +195,7 @@
         margin-bottom: 2.5em;
     }
 
-    body.${BODY} .filmix-tv__hero-bg {
+    .filmix-tv__hero-bg {
         display: block;
         width: 100%;
         height: 23em;
@@ -48,20 +204,20 @@
         background: #202226;
     }
 
-    body.${BODY} .filmix-tv__hero-content {
+    .filmix-tv__hero-content {
         padding: 2em 2.3em;
         background: linear-gradient(180deg,#242629,#151619);
         box-sizing: border-box;
     }
 
-    body.${BODY} .filmix-tv__eyebrow {
+    .filmix-tv__eyebrow {
         color: var(--ft-orange);
         font-weight: 700;
         letter-spacing: .15em;
         margin-bottom: .8em;
     }
 
-    body.${BODY} .filmix-tv__hero-title {
+    .filmix-tv__hero-title {
         color: #fff;
         font-size: 3em;
         font-weight: 700;
@@ -69,13 +225,13 @@
         margin-bottom: .4em;
     }
 
-    body.${BODY} .filmix-tv__hero-meta {
+    .filmix-tv__hero-meta {
         color: #e8b18e;
         font-size: 1.1em;
         margin-bottom: 1em;
     }
 
-    body.${BODY} .filmix-tv__hero-description {
+    .filmix-tv__hero-description {
         color: #d0d0d0;
         font-size: 1.05em;
         line-height: 1.5;
@@ -87,22 +243,48 @@
         overflow: hidden;
     }
 
-    /* РЯДЫ КАТАЛОГА */
-    body.${BODY} .filmix-tv__section {
+    .filmix-tv__actions {
+        display: flex;
+        gap: 1em;
+        flex-wrap: wrap;
+    }
+
+    .filmix-tv__action {
+        background: var(--ft-orange);
+        color: #fff;
+        border: 2px solid transparent;
+        border-radius: .55em;
+        padding: .85em 1.5em;
+        font-weight: 700;
+    }
+
+    .filmix-tv__action.secondary {
+        background: #292b2f;
+        border-color: #666;
+    }
+
+    .filmix-tv__action.focus {
+        background: #ff8a43 !important;
+        border-color: #ffbd91 !important;
+        color: #fff !important;
+        box-shadow: 0 0 18px rgba(237,118,46,.4) !important;
+    }
+
+    .filmix-tv__section {
         margin-bottom: 2.5em;
         width: 100%;
     }
 
-    body.${BODY} .filmix-tv__section-title {
+    .filmix-tv__section-title {
         font-size: 1.7em;
         font-weight: 650;
-        color: #fff;
+        color: var(--ft-gold-light);
         margin: 0 0 1em;
         padding-bottom: .65em;
-        border-bottom: 1px solid rgba(255,255,255,.12);
+        border-bottom: 1px solid rgba(216,182,107,.2);
     }
 
-    body.${BODY} .filmix-tv__row {
+    .filmix-tv__row {
         display: flex;
         flex-direction: row;
         gap: 1em;
@@ -111,7 +293,7 @@
         padding: .5em .3em 1em;
     }
 
-    body.${BODY} .filmix-tv__card {
+    .filmix-tv__card {
         flex: 0 0 13em;
         width: 13em;
         min-width: 0;
@@ -123,7 +305,15 @@
         overflow: hidden;
     }
 
-    body.${BODY} .filmix-tv__poster {
+    .filmix-tv__card.focus {
+        border-color: var(--ft-gold-light) !important;
+        background: #292a2c !important;
+        box-shadow: 0 0 20px rgba(237,118,46,.35) !important;
+        transform: scale(1.035);
+        z-index: 3;
+    }
+
+    .filmix-tv__poster {
         width: 100%;
         aspect-ratio: 2 / 3;
         height: auto;
@@ -133,7 +323,7 @@
         display: block;
     }
 
-    body.${BODY} .filmix-tv__card-title {
+    .filmix-tv__card-title {
         color: #f5f5f5;
         font-size: 1.05em;
         line-height: 1.3;
@@ -142,161 +332,24 @@
         min-height: 2.6em;
     }
 
-    body.${BODY} .filmix-tv__card-meta {
+    .filmix-tv__card-meta {
         color: #a9aaad;
         font-size: .9em;
         margin-top: .35em;
     }
 
-    body.${BODY} .filmix-tv__rating {
+    .filmix-tv__rating {
         color: #ffb17f;
     }
 
-    /* ВСЕ КНОПКИ И ИНТЕРАКТИВНЫЕ ЭЛЕМЕНТЫ */
-    body.${BODY} .selector,
-    body.${BODY} button,
-    body.${BODY} .button,
-    body.${BODY} .menu__item,
-    body.${BODY} .head__action,
-    body.${BODY} .full-start__button,
-    body.${BODY} .modal__button,
-    body.${BODY} .selectbox__item,
-    body.${BODY} .settings-param,
-    body.${BODY} .filmix-tv__action {
-        transition:
-            background-color .18s ease,
-            color .18s ease,
-            border-color .18s ease,
-            box-shadow .18s ease !important;
-        box-sizing: border-box;
-    }
-
-    /* ОБЫЧНОЕ СОСТОЯНИЕ */
-    body.${BODY} .menu__item,
-    body.${BODY} .head__action,
-    body.${BODY} .full-start__button,
-    body.${BODY} .modal__button,
-    body.${BODY} .selectbox__item,
-    body.${BODY} .settings-param {
-        border-color: rgba(237,118,46,.25) !important;
-    }
-
-    /* АКТИВНАЯ КНОПКА */
-    body.${BODY} .selector.focus,
-    body.${BODY} button.focus,
-    body.${BODY} .button.focus,
-    body.${BODY} .menu__item.focus,
-    body.${BODY} .head__action.focus,
-    body.${BODY} .full-start__button.focus,
-    body.${BODY} .modal__button.focus,
-    body.${BODY} .selectbox__item.focus,
-    body.${BODY} .settings-param.focus,
-    body.${BODY} .filmix-tv__action.focus {
-        background: #ed762e !important;
-        color: #ffffff !important;
-        border: 2px solid #ffbd91 !important;
-        box-shadow: 0 0 18px rgba(237,118,46,.4) !important;
-        outline: none !important;
-    }
-
-    /* КАРТОЧКА В ФОКУСЕ */
-    body.${BODY} .filmix-tv__card.focus {
-        border: 2px solid #ffbd91 !important;
-        background: #292a2c !important;
-        box-shadow: 0 0 20px rgba(237,118,46,.35) !important;
-        transform: scale(1.035);
-        z-index: 3;
-    }
-
-    /* КНОПКИ БАННЕРА */
-    body.${BODY} .filmix-tv__actions {
-        display: flex;
-        gap: 1em;
-        flex-wrap: wrap;
-    }
-
-    body.${BODY} .filmix-tv__action {
-        background: #ed762e;
-        color: #fff;
-        border: 2px solid transparent;
-        border-radius: .55em;
-        padding: .85em 1.5em;
-        font-weight: 700;
-    }
-
-    body.${BODY} .filmix-tv__action.secondary {
-        background: #292b2f;
-        border-color: #666;
-    }
-
-    /* МЕНЮ */
-    body.${BODY} .menu {
-        background: #191b1e !important;
-        border-right: 1px solid #303236 !important;
-    }
-
-    body.${BODY} .menu__item {
-        border-radius: .55em !important;
-    }
-
-    body.${BODY} .menu__item.focus {
-        background: #30251f !important;
-        color: #ffb17f !important;
-        border-left: 3px solid #ed762e !important;
-    }
-
-    /* СТРАНИЦА ФИЛЬМА */
-    body.${BODY} .full-start__body {
-        background: #191b1e !important;
-        border: 1px solid rgba(255,255,255,.08) !important;
-        border-radius: 1em !important;
-    }
-
-    body.${BODY} .full-start__title {
-        color: #fff !important;
-    }
-
-    body.${BODY} .full-start__button {
-        background: #202226 !important;
-        color: #f5f5f5 !important;
-        border-radius: .65em !important;
-    }
-
-    body.${BODY} .full-start__button.focus {
-        background: #ed762e !important;
-        color: #fff !important;
-    }
-
-    /* ОКНА, НАСТРОЙКИ, ПОИСК */
-    body.${BODY} .modal,
-    body.${BODY} .modal__content,
-    body.${BODY} .selectbox,
-    body.${BODY} .settings {
-        background-color: #191b1e !important;
-        color: #f4f4f4 !important;
-    }
-
-    body.${BODY} input,
-    body.${BODY} textarea {
-        background: #202226 !important;
-        color: #fff !important;
-        border: 1px solid #494b4e !important;
-        border-radius: .5em !important;
-    }
-
-    body.${BODY} input:focus,
-    body.${BODY} textarea:focus {
-        border-color: #ed762e !important;
-    }
-
-    body.${BODY} .filmix-tv__status,
-    body.${BODY} .filmix-tv__error {
+    .filmix-tv__status,
+    .filmix-tv__error {
         padding: 2em;
         color: #d0d0d0;
     }
 
     @media screen and (min-width:1500px) {
-        body.${BODY} .filmix-tv__card {
+        .filmix-tv__card {
             flex-basis: calc((100vw - 23em) / 6);
             width: calc((100vw - 23em) / 6);
         }
@@ -304,19 +357,18 @@
     `;
 
     var imageBase = 'https://image.tmdb.org/t/p/';
-    var observer = null;
-    var styleObserver = null;
+
+    /* GLOBAL STYLE INSTALLER */
 
     function applyStyle() {
-        if (!document.head || !document.body) return;
-
-        document.body.classList.add(BODY);
+        if (!document.head) return;
 
         var style = document.getElementById(STYLE);
 
         if (!style) {
             style = document.createElement('style');
             style.id = STYLE;
+            style.type = 'text/css';
             document.head.appendChild(style);
         }
 
@@ -326,33 +378,22 @@
     }
 
     function watchStyle() {
-        if (observer || !document.body) return;
+        if (window.filmixGlobalStyleObserver) return;
 
-        observer = new MutationObserver(function () {
-            if (!document.body.classList.contains(BODY)) {
-                document.body.classList.add(BODY);
-            }
+        applyStyle();
 
+        window.filmixGlobalStyleObserver = new MutationObserver(function () {
             if (!document.getElementById(STYLE)) {
                 applyStyle();
             }
         });
 
-        observer.observe(document.body, {
-            attributes: true,
-            attributeFilter: ['class']
-        });
-
-        styleObserver = new MutationObserver(function () {
-            if (!document.getElementById(STYLE)) {
-                applyStyle();
-            }
-        });
-
-        styleObserver.observe(document.head, {
+        window.filmixGlobalStyleObserver.observe(document.head, {
             childList: true
         });
     }
+
+    /* CATALOG HELPERS */
 
     function safe(value) {
         return String(value || '').replace(/[&<>"']/g, function (c) {
@@ -417,6 +458,8 @@
             });
         }
     }
+
+    /* SMART TV PAGE */
 
     function SmartTV() {
         var self = this;
@@ -619,6 +662,8 @@
         }
     }
 
+    /* PLUGIN INITIALIZATION */
+
     function init() {
         applyStyle();
         watchStyle();
@@ -651,7 +696,7 @@
             menu.append(button);
         }
 
-        console.log('[Filmix PRO+] Global Smart TV style active');
+        console.log('[Filmix PRO+] Global theme initialized');
     }
 
     if (window.appready) {
